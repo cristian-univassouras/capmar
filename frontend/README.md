@@ -17,3 +17,12 @@ O frontend não confia em dados não sanitizados e garante a proteção da sess�
 1. Acesse o diretório do frontend:
 ```bash
 cd frontend
+
+2. Instale as dependências e inicie o servidor:
+
+```bash
+npm install
+npm run dev
+```
+
+Acesse [http://localhost:3000](http://localhost:3000) para ver o resultado. Se o projeto for iniciado em outra porta, o terminal exibirá o endereço correto.

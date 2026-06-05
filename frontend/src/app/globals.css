@@ -1,0 +1,50 @@
+@import "tailwindcss";
+
+:root {
+  --background: #FFF1EB;
+  --foreground: #0A0A0A;
+  --primary: #421C77; /* Purple */
+  --accent: #FF6B35; /* Orange */
+  --secondary: #100A55; /* Navy */
+  --tertiary: #0A3B2C; /* Dark Green */
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-primary: var(--primary);
+  --color-accent: var(--accent);
+  --color-secondary: var(--secondary);
+  --color-tertiary: var(--tertiary);
+  --font-sans: var(--font-inter);
+  --font-heading: var(--font-outfit);
+  --radius-pill: 133px;
+  --radius-input: 53px;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --background: #FFF1EB; /* Keep it light for the brand look, or invert it carefully */
+    --foreground: #0A0A0A;
+  }
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+  font-family: var(--font-inter), sans-serif;
+}
+
+/* Utilities */
+@layer utilities {
+  .glass {
+    @apply bg-white/70 backdrop-blur-md border border-white/20;
+  }
+  .font-heading {
+    font-family: var(--font-outfit), sans-serif;
+  }
+  .text-shadow-solid {
+    text-shadow: 2px 2px 0px rgba(0,0,0,0.1);
+  }
+}
+
