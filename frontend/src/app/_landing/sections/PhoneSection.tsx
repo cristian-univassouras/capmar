@@ -192,33 +192,38 @@ export default function PhoneSection({ children }: { children?: ReactNode }) {
   const textMouseY = useTransform(smoothY, [-1, 1], [60, -60]);
 
   // Entering viewport (0 to 0.33)
+  // NOTE: Ranges must extend to 1.0 for any value that needs to persist after its animation window.
+  // Framer Motion v11 uses WAAPI with fill:"none" — when scrollYProgress exceeds an animation's
+  // input range, the animation completes and the element reverts to its inline style fallback.
+  // For opacity the fallback is 0 (set by FM as the initial value), so the phone disappears.
+  // Extending each range to [... , 1.0] with the same end value prevents premature completion.
   const y = useTransform(scrollYProgress, [0, 0.33], ["-100vh", "0vh"]);
   const rotateX = useTransform(scrollYProgress, [0, 0.33], [40, 0]);
   const rotateY = useTransform(scrollYProgress, [0, 0.33], [20, 0]);
   const rotateZ = useTransform(scrollYProgress, [0, 0.33], [-10, 0]);
   const phoneScale = useTransform(scrollYProgress, [0, 0.33], [0.7, 1]);
-  const opacity = useTransform(scrollYProgress, [0, 0.2, 0.33], [0, 0.8, 1]);
+  const opacity = useTransform(scrollYProgress, [0, 0.2, 0.33, 1.0], [0, 0.8, 1, 1]);
 
   // UI elements appear (0.33 to 0.45)
-  const headerY = useTransform(scrollYProgress, [0.33, 0.4], ["-20px", "0px"]);
-  const headerOpacity = useTransform(scrollYProgress, [0.33, 0.4], [0, 1]);
+  const headerY = useTransform(scrollYProgress, [0.33, 0.4, 1.0], ["-20px", "0px", "0px"]);
+  const headerOpacity = useTransform(scrollYProgress, [0.33, 0.4, 1.0], [0, 1, 1]);
 
-  const postY = useTransform(scrollYProgress, [0.38, 0.45], ["30px", "0px"]);
-  const postOpacity = useTransform(scrollYProgress, [0.38, 0.45], [0, 1]);
-  const postScale = useTransform(scrollYProgress, [0.38, 0.45], [0.95, 1]);
+  const postY = useTransform(scrollYProgress, [0.38, 0.45, 1.0], ["30px", "0px", "0px"]);
+  const postOpacity = useTransform(scrollYProgress, [0.38, 0.45, 1.0], [0, 1, 1]);
+  const postScale = useTransform(scrollYProgress, [0.38, 0.45, 1.0], [0.95, 1, 1]);
 
-  const navY = useTransform(scrollYProgress, [0.4, 0.48], ["20px", "0px"]);
-  const navOpacity = useTransform(scrollYProgress, [0.4, 0.48], [0, 1]);
+  const navY = useTransform(scrollYProgress, [0.4, 0.48, 1.0], ["20px", "0px", "0px"]);
+  const navOpacity = useTransform(scrollYProgress, [0.4, 0.48, 1.0], [0, 1, 1]);
 
   const tearDistance = isMobile ? 80 : isTablet ? 250 : 450;
-  const tearTopX = useTransform(scrollYProgress, [0.5, 0.9], [0, -tearDistance]);
+  const tearTopX = useTransform(scrollYProgress, [0.5, 0.9, 1.0], [0, -tearDistance, -tearDistance]);
   const tearTopY = useTransform(scrollYProgress, [0.5, 0.9], [0, 0]);
-  const tearTopRotate = useTransform(scrollYProgress, [0.5, 0.9], [0, -5]);
-  
-  const tearBottomX = useTransform(scrollYProgress, [0.5, 0.9], [0, tearDistance]);
+  const tearTopRotate = useTransform(scrollYProgress, [0.5, 0.9, 1.0], [0, -5, -5]);
+
+  const tearBottomX = useTransform(scrollYProgress, [0.5, 0.9, 1.0], [0, tearDistance, tearDistance]);
   const tearBottomY = useTransform(scrollYProgress, [0.5, 0.9], [0, 0]);
-  const tearBottomRotate = useTransform(scrollYProgress, [0.5, 0.9], [0, 5]);
-  
+  const tearBottomRotate = useTransform(scrollYProgress, [0.5, 0.9, 1.0], [0, 5, 5]);
+
   const clipTop = "polygon(0% 0%, 100% 0%, 100% 35%, 0% 65%)";
   const clipBottom = "polygon(0% 65%, 100% 35%, 100% 100%, 0% 100%)";
 
@@ -226,8 +231,8 @@ export default function PhoneSection({ children }: { children?: ReactNode }) {
 
   const finalTextScale = isMobile ? 0.35 : isTablet ? 0.25 : 0.1754;
   const textScale = useTransform(scrollYProgress, [0.5, 0.6, 0.9, 1.0], [0.947, 1.0, 1.0, finalTextScale]);
-  const textOpacity = useTransform(scrollYProgress, [0.5, 0.6], [0, 1]);
-  const textFilter = useTransform(scrollYProgress, [0.5, 0.6], ["blur(10px)", "blur(0px)"]);
+  const textOpacity = useTransform(scrollYProgress, [0.5, 0.6, 1.0], [0, 1, 1]);
+  const textFilter = useTransform(scrollYProgress, [0.5, 0.6, 1.0], ["blur(10px)", "blur(0px)", "blur(0px)"]);
 
   return (
     <section 
@@ -238,9 +243,12 @@ export default function PhoneSection({ children }: { children?: ReactNode }) {
       <div ref={trackRef} className="absolute top-0 left-0 w-full h-[300vh] pointer-events-none" />
         
       {/* Sticky Container */}
-      <div className="sticky top-0 w-full h-screen flex items-center justify-center py-20 px-4 perspective-distant z-0">
-          
-          <motion.div 
+      {/* perspective-distant moved to inner div — Chrome discards composited child layers
+          when a sticky element with perspective snaps, causing the phone to disappear at the apex. */}
+      <div className="sticky top-0 w-full h-screen z-0">
+      <div className="w-full h-full flex items-center justify-center py-20 px-4 perspective-distant">
+
+          <motion.div
             style={{ 
               scale: textScale, 
               opacity: textOpacity, 
@@ -277,13 +285,14 @@ export default function PhoneSection({ children }: { children?: ReactNode }) {
               }} 
               className="relative w-full h-[700px] shadow-2xl"
             >
-              {/* Phone Mockup Container (Mold) - Handles Border Radius and Overflow Hidden */}
-              <div 
-                className="absolute inset-0 bg-background rounded-[50px] overflow-hidden border-[6px] border-white flex flex-col"
+              {/* Phone Mockup Container (Mold) */}
+              {/* clip-path:inset() adds a clip-tree node (no compositor layer created).
+                  overflow:hidden was creating an intermediate overflow-clip compositor layer
+                  that Chrome cannot manage inside a 3D-transformed parent with composited children. */}
+              <div
+                className="absolute inset-0 bg-background rounded-[50px] border-[6px] border-white flex flex-col"
                 style={{
-                  isolation: "isolate",
-                  transform: "translateZ(0)",
-                  WebkitMaskImage: "-webkit-radial-gradient(white, black)"
+                  clipPath: "inset(0 0 0 0 round 50px)",
                 }}
               >
                  {/* Background revealed content inside the phone */}
@@ -334,8 +343,9 @@ export default function PhoneSection({ children }: { children?: ReactNode }) {
               </div>
             </motion.div>
           </motion.div>
-          
-      </div>
+
+      </div>{/* end perspective wrapper */}
+      </div>{/* end sticky */}
 
       {/* Spacer inside trackRef to create the 200vh scrolling distance while the phone is sticky */}
       <div className="w-full h-[200vh] pointer-events-none" />
