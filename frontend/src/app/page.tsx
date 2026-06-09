@@ -1,16 +1,16 @@
-import Navbar from "@/components/landing/Navbar";
-import Hero from "@/components/landing/Hero";
-import PhoneSection from "@/components/landing/PhoneSection";
-import Features from "@/components/landing/Features";
-import CapmarShowcase from "@/components/landing/CapmarShowcase";
-import SecurityGrid from "@/components/landing/SecurityGrid";
-import FinalCTA from "@/components/landing/FinalCTA";
-import Footer from "@/components/landing/Footer";
-import InteractiveGrid from "@/components/landing/InteractiveGrid";
+import Navbar from "@/app/_landing/layout/Navbar";
+import Hero from "@/app/_landing/sections/Hero";
+import PhoneSection from "@/app/_landing/sections/PhoneSection";
+import Features from "@/app/_landing/sections/Features";
+import CapmarShowcase from "@/app/_landing/sections/CapmarShowcase";
+import SecurityGrid from "@/app/_landing/sections/SecurityGrid";
+import FinalCTA from "@/app/_landing/sections/FinalCTA";
+import Footer from "@/app/_landing/layout/Footer";
+import InteractiveGrid from "@/app/_landing/components/InteractiveGrid";
 
 export default function Home() {
   return (
-    <main className="min-h-screen flex flex-col items-center overflow-x-clip">
+    <main className="min-h-screen w-full">
       <Navbar />
       <Hero />
       <PhoneSection>

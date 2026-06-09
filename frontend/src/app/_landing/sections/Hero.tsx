@@ -1,5 +1,5 @@
 import Link from "next/link";
-import InteractiveGrid from "./InteractiveGrid";
+import InteractiveGrid from "@/app/_landing/components/InteractiveGrid";
 
 export default function Hero() {
   return (

@@ -26,9 +26,9 @@ export default function RootLayout({
   return (
     <html
       lang="pt-BR"
-      className={`${inter.variable} ${outfit.variable} h-full antialiased scroll-smooth`}
+      className={`${inter.variable} ${outfit.variable} antialiased scroll-smooth`}
     >
-      <body className="min-h-full flex flex-col font-sans bg-background text-foreground overflow-x-clip">{children}</body>
+      <body className="flex flex-col font-sans bg-background text-foreground">{children}</body>
     </html>
   );
 }

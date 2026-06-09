@@ -50,7 +50,7 @@ export default function CapmarShowcase() {
         >
           {/* Background Image - Absolute to cover full viewport size initially */}
           <motion.div 
-            className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-[100vw] h-[100vh]"
+            className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-screen h-screen"
             style={{ opacity: imageOpacity }}
           >
             <Image
@@ -66,7 +66,7 @@ export default function CapmarShowcase() {
           {/* Scaled Text */}
           <motion.div 
             style={{ scale: contentScale }}
-            className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 z-20 flex flex-col items-center justify-center font-heading font-black uppercase w-[100vw] h-[100vh] pointer-events-none"
+            className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 z-20 flex flex-col items-center justify-center font-heading font-black uppercase w-screen h-screen pointer-events-none"
           >
             <motion.h2 
               className="flex flex-col items-center text-center transform scale-y-[1.1] md:scale-y-[1.15]"
