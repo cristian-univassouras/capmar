@@ -9,7 +9,7 @@ export default function Hero() {
 
       {/* Massive Text Background */}
       <div className="relative w-full max-w-[1400px] px-4 flex flex-col items-center justify-center text-center z-30 pointer-events-none">
-        <h1 className="font-heading font-black text-[8vw] sm:text-[8vw] leading-[0.8] tracking-tighter text-primary uppercase text-center mx-auto mb-12 transform scale-y-[1.1] pointer-events-auto">
+        <h1 className="font-heading font-black text-[clamp(2rem,8vw,5.5rem)] leading-[0.8] tracking-tighter text-primary uppercase text-center mx-auto mb-12 transform scale-y-[1.1] pointer-events-auto">
           A vitrine <br /> do seu Projeto
         </h1>
         

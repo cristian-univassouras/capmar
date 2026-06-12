@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { Globe, Menu } from "lucide-react";
+import { Globe, Menu, X } from "lucide-react";
 import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 
@@ -10,6 +10,7 @@ const smoothEase = [0.16, 1, 0.3, 1] as const;
 
 export default function Navbar() {
   const [scrolled, setScrolled] = useState(false);
+  const [menuOpen, setMenuOpen] = useState(false);
 
   useEffect(() => {
     const handleScroll = () => {
@@ -55,10 +56,10 @@ export default function Navbar() {
           </Link>
 
           <nav className="items-center gap-8 text-sm font-semibold text-gray-800 hidden md:flex">
-            <Link href="#features" className="hover:text-black transition-colors">Bem Vindo</Link>
-            <Link href="#developer" className="hover:text-black transition-colors">Destaques</Link>
-            <Link href="#card" className="hover:text-black transition-colors">Ajuda</Link>
-            <Link href="#usd" className="hover:text-black transition-colors">Sobre</Link>
+            <Link href="/" className="hover:text-black transition-colors">Bem Vindo</Link>
+            <Link href="/#features" className="hover:text-black transition-colors">Destaques</Link>
+            <Link href="/ajuda" className="hover:text-black transition-colors">Ajuda</Link>
+            <Link href="/sobre" className="hover:text-black transition-colors">Sobre</Link>
           </nav>
         </motion.div>
 
@@ -97,20 +98,50 @@ export default function Navbar() {
             </Link>
           </div>
 
-          {/* Burger Menu Button */}
-          <motion.div 
-            animate={{ 
+          {/* Burger Menu Button + Dropdown */}
+          <motion.div
+            animate={{
               opacity: scrolled ? 1 : 0,
               width: scrolled ? 48 : 0,
               scale: scrolled ? 1 : 0.5,
-              marginLeft: scrolled ? 8 : 0
+              marginLeft: scrolled ? 8 : 0,
             }}
             transition={{ duration: 0.8, ease: smoothEase }}
-            className="relative flex items-center justify-center shrink-0 h-12 overflow-hidden pointer-events-auto"
+            className="relative flex items-center justify-center shrink-0 h-12 overflow-visible pointer-events-auto"
           >
-            <button className="relative z-10 w-12 h-12 rounded-full flex items-center justify-center shrink-0">
-              <Menu className="w-6 h-6 text-gray-900" />
+            <button
+              onClick={() => setMenuOpen((o) => !o)}
+              className="relative z-10 w-12 h-12 rounded-full flex items-center justify-center shrink-0"
+            >
+              {menuOpen
+                ? <X className="w-6 h-6 text-gray-900" />
+                : <Menu className="w-6 h-6 text-gray-900" />
+              }
             </button>
+
+            {/* Dropdown */}
+            <motion.div
+              initial={false}
+              animate={menuOpen ? { opacity: 1, y: 0, pointerEvents: "auto" } : { opacity: 0, y: -8, pointerEvents: "none" }}
+              transition={{ duration: 0.25, ease: smoothEase }}
+              className="absolute top-14 right-0 bg-white rounded-2xl shadow-xl border border-gray-100 py-2 w-44 flex flex-col"
+            >
+              {[
+                { href: "/",         label: "Bem Vindo"  },
+                { href: "/#features", label: "Destaques" },
+                { href: "/ajuda",    label: "Ajuda"      },
+                { href: "/sobre",    label: "Sobre"      },
+              ].map(({ href, label }) => (
+                <Link
+                  key={href + label}
+                  href={href}
+                  onClick={() => setMenuOpen(false)}
+                  className="px-5 py-3 text-sm font-semibold text-gray-700 hover:text-primary hover:bg-primary/5 transition-colors"
+                >
+                  {label}
+                </Link>
+              ))}
+            </motion.div>
           </motion.div>
         </div>
       </div>

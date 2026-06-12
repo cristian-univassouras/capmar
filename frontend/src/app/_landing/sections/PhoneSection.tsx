@@ -147,7 +147,7 @@ export default function PhoneSection({ children }: { children?: ReactNode }) {
   const trackRef = useRef<HTMLDivElement>(null);
   const { width } = useWindowDimensions();
   const isMobile = width < 768;
-  const isTablet = width >= 768 && width <= 1366;
+  const isLargeDesktop = width >= 1536;
   
   // Mouse Parallax Setup
   const { scrollYProgress } = useScroll({
@@ -215,7 +215,9 @@ export default function PhoneSection({ children }: { children?: ReactNode }) {
   const navY = useTransform(scrollYProgress, [0.4, 0.48, 1.0], ["20px", "0px", "0px"]);
   const navOpacity = useTransform(scrollYProgress, [0.4, 0.48, 1.0], [0, 1, 1]);
 
-  const tearDistance = isMobile ? 80 : isTablet ? 250 : 450;
+  // tearDistance must exceed the phone's rendered width so clip pieces slide fully off-screen.
+  // Phone widths: mobile=240px, tablet/notebook=260px, large desktop=360px.
+  const tearDistance = isMobile ? 280 : isLargeDesktop ? 420 : 310;
   const tearTopX = useTransform(scrollYProgress, [0.5, 0.9, 1.0], [0, -tearDistance, -tearDistance]);
   const tearTopY = useTransform(scrollYProgress, [0.5, 0.9], [0, 0]);
   const tearTopRotate = useTransform(scrollYProgress, [0.5, 0.9, 1.0], [0, -5, -5]);
@@ -227,9 +229,13 @@ export default function PhoneSection({ children }: { children?: ReactNode }) {
   const clipTop = "polygon(0% 0%, 100% 0%, 100% 35%, 0% 65%)";
   const clipBottom = "polygon(0% 65%, 100% 35%, 100% 100%, 0% 100%)";
 
-  const capybaraOpacity = useTransform(scrollYProgress, [0.9, 1.0], [1, 0]);
+  // Fade the capybara IN as the tear completes, then hold at 1. Range extends to 1.0
+  // to prevent WAAPI from snapping back to the inline fallback after the animation window.
+  const capybaraOpacity = useTransform(scrollYProgress, [0.85, 0.95, 1.0], [0, 1, 1]);
 
-  const finalTextScale = isMobile ? 0.35 : isTablet ? 0.25 : 0.1754;
+  // Scale the headline so it reads as natural phone-screen text in the final state.
+  // Calibrated to phone widths: mobile=240px, tablet/notebook=260px, large desktop=360px.
+  const finalTextScale = isMobile ? 0.35 : isLargeDesktop ? 0.25 : 0.19;
   const textScale = useTransform(scrollYProgress, [0.5, 0.6, 0.9, 1.0], [0.947, 1.0, 1.0, finalTextScale]);
   const textOpacity = useTransform(scrollYProgress, [0.5, 0.6, 1.0], [0, 1, 1]);
   const textFilter = useTransform(scrollYProgress, [0.5, 0.6, 1.0], ["blur(10px)", "blur(0px)", "blur(0px)"]);
@@ -258,7 +264,7 @@ export default function PhoneSection({ children }: { children?: ReactNode }) {
             }}
             className="absolute z-50 pointer-events-none flex flex-col items-center justify-center w-full"
           >
-            <h2 className="font-heading font-black text-[clamp(60px,10vw,171px)] leading-none tracking-tighter text-primary uppercase text-center transform scale-y-[1.1] text-shadow-solid whitespace-nowrap">
+            <h2 className="font-heading font-black text-[clamp(60px,10vw,110px)] leading-none tracking-tighter text-primary uppercase text-center transform scale-y-[1.1] text-shadow-solid whitespace-nowrap">
               Seu Projeto <br /> Visivel para o mundo
             </h2>
           </motion.div>
@@ -271,7 +277,7 @@ export default function PhoneSection({ children }: { children?: ReactNode }) {
               rotateX: phoneMouseRotateX,
               rotateY: phoneRotateY,
             }}
-            className="relative z-40 w-full max-w-[360px] mx-auto"
+            className="relative z-40 w-full max-w-[240px] md:max-w-[260px] 2xl:max-w-[360px] mx-auto"
           >
             {/* Scroll Animation Wrapper (Handles 3D transforms separately from overflow-hidden) */}
             <motion.div 
@@ -283,7 +289,7 @@ export default function PhoneSection({ children }: { children?: ReactNode }) {
                 scale: phoneScale, 
                 opacity,
               }} 
-              className="relative w-full h-[700px] shadow-2xl"
+              className="relative w-full h-[467px] md:h-[505px] 2xl:h-[700px] shadow-2xl"
             >
               {/* Phone Mockup Container (Mold) */}
               {/* clip-path:inset() adds a clip-tree node (no compositor layer created).
