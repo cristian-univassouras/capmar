@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>CapMar — Diagramas do Banco de Dados</title>
+  <style>
+    :root { --primary:#421C77; --accent:#FF6B35; --bg:#FFF1EB; }
+    * { box-sizing: border-box; }
+    body { margin:0; font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
+           background: var(--bg); color:#1a1a2e; }
+    header { background: var(--primary); color:#fff; padding: 24px 28px; }
+    header h1 { margin:0 0 4px; font-size: 1.5rem; }
+    header p  { margin:0; opacity:.85; font-size:.9rem; }
+    main { max-width: 1200px; margin: 0 auto; padding: 24px; }
+    .card { background:#fff; border-radius:14px; padding:20px; margin-bottom:28px;
+            box-shadow: 0 6px 24px rgba(66,28,119,.08); }
+    .card h2 { margin-top:0; color: var(--primary); }
+    .toolbar { display:flex; gap:10px; flex-wrap:wrap; margin-bottom:14px; }
+    button { background: var(--accent); color:#fff; border:0; border-radius:8px;
+             padding:8px 14px; font-weight:600; cursor:pointer; font-size:.85rem; }
+    button:hover { filter: brightness(1.05); }
+    .diagram { overflow-x:auto; background:#fff; border:1px solid #eee; border-radius:8px; padding:10px; }
+    .hint { font-size:.8rem; color:#666; margin-top:8px; }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>CapMar — Diagramas do Banco de Dados</h1>
+    <p>Modelo conceitual e modelo lógico/físico (PostgreSQL 16). Use os botões para exportar imagens.</p>
+  </header>
+
+  <main>
+    <section class="card">
+      <h2>1. Modelo Conceitual</h2>
+      <div class="toolbar">
+        <button onclick="exportar('d-conceitual','png','capmar-modelo-conceitual')">Baixar PNG</button>
+        <button onclick="exportar('d-conceitual','svg','capmar-modelo-conceitual')">Baixar SVG</button>
+      </div>
+      <div class="diagram"><pre class="mermaid" id="d-conceitual">
+erDiagram
+    CATEGORY ||--o{ PROJECT  : "classifica"
+    USERS    ||--o{ PROJECT  : "é dono"
+    PROJECT  ||--|{ TEAM     : "possui"
+    USERS    ||--o{ TEAM     : "lidera"
+    USERS    }o--o{ PROJECT  : "participa"
+    USERS    }o--o{ TEAM     : "integra"
+    KEYWORDS }o--o{ PROJECT  : "marca"
+    KEYWORDS }o--o{ TEAM     : "marca"
+    KEYWORDS }o--o{ USERS    : "marca"
+    USERS    ||--o{ POST     : "publica"
+    PROJECT  ||--o{ POST     : "é citado em"
+    USERS    }o--o{ PROJECT  : "curte"
+    USERS    ||--o{ COMENTARIO : "escreve"
+    PROJECT  ||--o{ COMENTARIO : "recebe"
+      </pre></div>
+    </section>
+
+    <section class="card">
+      <h2>2. Modelo Lógico / Físico</h2>
+      <div class="toolbar">
+        <button onclick="exportar('d-logico','png','capmar-modelo-logico')">Baixar PNG</button>
+        <button onclick="exportar('d-logico','svg','capmar-modelo-logico')">Baixar SVG</button>
+      </div>
+      <div class="diagram"><pre class="mermaid" id="d-logico">
+erDiagram
+    CATEGORY ||--o{ PROJECT            : "category_id"
+    USERS    ||--o{ PROJECT            : "owner_id"
+    PROJECT  ||--o{ TEAM               : "project_id"
+    USERS    ||--o{ TEAM               : "leader_id"
+    USERS    ||--o{ POST               : "user_id"
+    PROJECT  ||--o{ POST               : "project_id"
+    PROJECT  ||--o{ PROJECT_COMMENTS   : "project_id"
+    USERS    ||--o{ PROJECT_COMMENTS   : "user_id"
+    PROJECT  ||--o{ PROJECT_LIKES      : ""
+    USERS    ||--o{ PROJECT_LIKES      : ""
+    PROJECT  ||--o{ PROJECT_USERS      : ""
+    USERS    ||--o{ PROJECT_USERS      : ""
+    TEAM     ||--o{ TEAM_USERS         : ""
+    USERS    ||--o{ TEAM_USERS         : ""
+    PROJECT  ||--o{ PROJECTS_KEYWORDS  : ""
+    KEYWORDS ||--o{ PROJECTS_KEYWORDS  : ""
+    TEAM     ||--o{ TEAM_KEYWORDS      : ""
+    KEYWORDS ||--o{ TEAM_KEYWORDS      : ""
+    USERS    ||--o{ USER_KEYWORDS      : ""
+    KEYWORDS ||--o{ USER_KEYWORDS      : ""
+    CATEGORY {
+        int  id PK
+        text description
+    }
+    USERS {
+        int     user_id PK
+        varchar username UK
+        varchar first_name
+        varchar last_name
+        varchar email UK
+        varchar user_password
+        varchar avatar_url
+    }
+    KEYWORDS {
+        int     keyword_id PK
+        varchar word UK
+        int     popularity
+    }
+    PROJECT {
+        int     project_id PK
+        varchar name
+        text    description
+        varchar template
+        varchar status
+        boolean visibility
+        date    created_at
+        int     category_id FK
+        int     owner_id FK
+        varchar cover_url
+        varchar logo_url
+    }
+    TEAM {
+        int     team_id PK
+        varchar team_name
+        text    purpose
+        date    created_at
+        int     project_id FK
+        int     leader_id FK
+    }
+    POST {
+        int     post_id PK
+        text    content
+        varchar image_url
+        date    created_at
+        int     user_id FK
+        int     project_id FK
+    }
+    PROJECT_COMMENTS {
+        int  comment_id PK
+        text content
+        date created_at
+        int  project_id FK
+        int  user_id FK
+    }
+    PROJECT_LIKES {
+        int project_id PK,FK
+        int user_id PK,FK
+    }
+    PROJECT_USERS {
+        int project_id PK,FK
+        int user_id PK,FK
+    }
+    TEAM_USERS {
+        int team_id PK,FK
+        int user_id PK,FK
+    }
+    PROJECTS_KEYWORDS {
+        int project_id PK,FK
+        int keyword_id PK,FK
+    }
+    TEAM_KEYWORDS {
+        int team_id PK,FK
+        int keyword_id PK,FK
+    }
+    USER_KEYWORDS {
+        int user_id PK,FK
+        int keyword_id PK,FK
+    }
+      </pre></div>
+      <p class="hint">Dica: se preferir, copie o conteúdo de <code>backend/Database&nbsp;Schema.txt</code> (DBML) em
+        <a href="https://dbdiagram.io" target="_blank" rel="noreferrer">dbdiagram.io</a> para um diagrama editável.</p>
+    </section>
+  </main>
+
+  <script type="module">
+    import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs';
+    mermaid.initialize({ startOnLoad: true, theme: 'base',
+      themeVariables: { primaryColor:'#FFF1EB', primaryBorderColor:'#421C77',
+                        lineColor:'#FF6B35', primaryTextColor:'#1a1a2e' } });
+
+    // Exporta o SVG renderizado pelo Mermaid como SVG ou PNG.
+    window.exportar = async (id, formato, nome) => {
+      const svg = document.querySelector(`#${id} svg`);
+      if (!svg) { alert('Diagrama ainda não renderizado, aguarde um instante.'); return; }
+      const xml = new XMLSerializer().serializeToString(svg);
+      if (formato === 'svg') {
+        baixar(new Blob([xml], { type: 'image/svg+xml' }), `${nome}.svg`);
+        return;
+      }
+      const vb = svg.viewBox.baseVal;
+      const escala = 2; // 2x para boa resolução
+      const w = (vb && vb.width  ? vb.width  : svg.clientWidth)  * escala;
+      const h = (vb && vb.height ? vb.height : svg.clientHeight) * escala;
+      const img = new Image();
+      img.onload = () => {
+        const canvas = document.createElement('canvas');
+        canvas.width = w; canvas.height = h;
+        const ctx = canvas.getContext('2d');
+        ctx.fillStyle = '#ffffff'; ctx.fillRect(0, 0, w, h);
+        ctx.drawImage(img, 0, 0, w, h);
+        canvas.toBlob(b => baixar(b, `${nome}.png`), 'image/png');
+      };
+      img.src = 'data:image/svg+xml;base64,' + btoa(unescape(encodeURIComponent(xml)));
+    };
+    const baixar = (blob, nome) => {
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(blob); a.download = nome; a.click();
+      URL.revokeObjectURL(a.href);
+    };
+  </script>
+</body>
+</html>
