@@ -1,0 +1,14 @@
+# Env
+.env
+*/.env
+!.env.example
+
+# Python / backend
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+.pytest_cache/
+
+# Docker / dados locais
+pgdata/
