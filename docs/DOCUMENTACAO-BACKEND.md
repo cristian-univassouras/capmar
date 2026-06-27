@@ -255,12 +255,9 @@ erDiagram
     USERS    ||--o{ COMENTARIO : "escreve"
     PROJECT  ||--o{ COMENTARIO : "recebe"
 ```
-
 > O diagrama acima é renderizado automaticamente como imagem no GitHub e no preview de Markdown do VS Code.
 > Para exportar como arquivo `.png`/`.svg`, veja a [seção 7](#7-imagens-do-banco-criado).
-
 ---
-
 ## 6. Projeto lógico do banco de dados
 
 ### 6.1 Diagrama lógico/físico (com atributos)
