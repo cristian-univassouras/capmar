@@ -1,7 +1,11 @@
 "use client";
 
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import Link from "next/link";
+import { useEffect, useState } from "react";
+
+import { clearSession, getStoredUser, type User } from "@/lib/api";
+import { Avatar } from "@/app/_components/media";
 
 const navItems = [
   { href: "/home", label: "Home", icon: (
@@ -13,16 +17,32 @@ const navItems = [
   { href: "/perfil", label: "Perfil", icon: (
     <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" /></svg>
   )},
-  { href: "/projeto/1", label: "Projetos", icon: (
+  { href: "/projetos", label: "Projetos", icon: (
     <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" /></svg>
   )},
-  { href: "/equipe/1", label: "Equipes", icon: (
+  { href: "/equipes", label: "Equipes", icon: (
     <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
   )},
 ];
 
 export default function AppShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
+  const router = useRouter();
+  const [user, setUser] = useState<User | null>(null);
+
+  useEffect(() => {
+    setUser(getStoredUser());
+  }, []);
+
+  function handleLogout() {
+    clearSession();
+    router.replace("/login");
+  }
+
+  const displayName =
+    [user?.first_name, user?.last_name].filter(Boolean).join(" ") ||
+    user?.username ||
+    "Usuário";
 
   return (
     <div className="min-h-screen bg-[#F5F0EC] flex">
@@ -51,16 +71,26 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
           ))}
         </nav>
 
-        <div className="p-4 border-t border-gray-100">
-          <div className="flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-gray-50 cursor-pointer">
-            <div className="w-9 h-9 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold text-sm shrink-0">
-              U
-            </div>
+        <div className="p-4 border-t border-gray-100 flex items-center gap-2">
+          <Link
+            href="/perfil"
+            className="flex flex-1 min-w-0 items-center gap-3 px-3 py-2 rounded-xl hover:bg-gray-50"
+          >
+            <Avatar user={user} className="w-9 h-9 text-sm" />
             <div className="flex-1 min-w-0">
-              <p className="text-sm font-semibold text-gray-800 truncate">Usuário</p>
-              <p className="text-xs text-gray-400 truncate">@usuario</p>
+              <p className="text-sm font-semibold text-gray-800 truncate">{displayName}</p>
+              <p className="text-xs text-gray-400 truncate">
+                {user?.username ? `@${user.username}` : ""}
+              </p>
             </div>
-          </div>
+          </Link>
+          <button
+            onClick={handleLogout}
+            title="Sair"
+            className="p-2 text-gray-400 hover:text-accent hover:bg-accent/5 rounded-xl transition-colors shrink-0"
+          >
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" /></svg>
+          </button>
         </div>
       </aside>
 
@@ -77,7 +107,7 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" /></svg>
             <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-accent rounded-full" />
           </button>
-          <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold text-sm cursor-pointer">U</div>
+          <Link href="/perfil"><Avatar user={user} className="w-8 h-8 text-sm" /></Link>
         </header>
 
         <main className="flex-1 p-4 md:p-6">{children}</main>

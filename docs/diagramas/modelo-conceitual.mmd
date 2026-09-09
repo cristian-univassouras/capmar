@@ -1,0 +1,17 @@
+%% Modelo Conceitual (alto nível) - CapMar
+%% Entidades de negócio e cardinalidades, sem atributos físicos.
+erDiagram
+    CATEGORY ||--o{ PROJECT  : "classifica"
+    USERS    ||--o{ PROJECT  : "é dono"
+    PROJECT  ||--|{ TEAM     : "possui"
+    USERS    ||--o{ TEAM     : "lidera"
+    USERS    }o--o{ PROJECT  : "participa"
+    USERS    }o--o{ TEAM     : "integra"
+    KEYWORDS }o--o{ PROJECT  : "marca"
+    KEYWORDS }o--o{ TEAM     : "marca"
+    KEYWORDS }o--o{ USERS    : "marca"
+    USERS    ||--o{ POST     : "publica"
+    PROJECT  ||--o{ POST     : "é citado em"
+    USERS    }o--o{ PROJECT  : "curte"
+    USERS    ||--o{ COMENTARIO : "escreve"
+    PROJECT  ||--o{ COMENTARIO : "recebe"

@@ -6,7 +6,7 @@ A CapMar é uma plataforma web desenvolvida para aumentar a visibilidade de pequ
 Este repositório está dividido em dois módulos principais. Recomendamos fortemente a adoção do padrão GitFlow (`main`, `develop`, `feature/*`) para o versionamento do código.
 
 - [**Frontend**](./frontend/README.md): A interface do usuário desenvolvida em Next.js.
-- [**Backend**](./backend/README.md): A API RESTful e lógica de negócios desenvolvida em Python / FastAPI com banco de dados MySQL.
+- [**Backend**](./backend/README.md): A API RESTful e lógica de negócios desenvolvida em Python / FastAPI com banco de dados PostgreSQL.
 
 ## 👥 Equipe
 Projeto de extensão desenvolvido por estudantes de Engenharia de Software da Universidade de Vassouras - Campus Maricá:

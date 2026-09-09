@@ -1,23 +1,57 @@
 # CapMar - Backend ⚙️
 
-Este é o cérebro da plataforma CapMar. Uma API RESTful de alta performance projetada para lidar com autenticação, cadastros, upload de portfólios e comunicação com o banco de dados.
+Este é o cérebro da plataforma CapMar. Uma API RESTful projetada para lidar com cadastros de projetos, equipes, usuários e comunicação com o banco de dados.
 
 ## 🛠️ Tecnologias Utilizadas
 - **Linguagem:** Python 3.10+
 - **Framework Web:** FastAPI
 - **Servidor ASGI:** Uvicorn
-- **ORM:** SQLAlchemy
-- **Validação de Dados:** Pydantic
-- **Banco de Dados:** MySQL
+- **ORM:** SQLAlchemy 2.0
+- **Validação de Dados:** Pydantic v2
+- **Banco de Dados:** PostgreSQL 16
 
-## 🔒 Segurança e Tratamento de Dados
-Este backend foi construído com as melhores práticas de Engenharia de Software:
-- **Proteção contra Injeção SQL:** Todas as interações com o banco MySQL passam pelo ORM SQLAlchemy.
-- **Validação Rígida:** Todos os *payloads* de entrada (como criação de usuários e envios de projetos) são exaustivamente validados pelas rotas utilizando modelos Pydantic.
-- **Rate Limiting:** Implementação de limite de requisições por IP (ex: via `slowapi`) para mitigar ataques DDoS e força bruta em rotas de autenticação.
+## 📂 Estrutura
+```
+backend/
+  app/
+    main.py        # cria o app, CORS, cria tabelas no startup, seed de categorias
+    config.py      # settings via env (.env) — DATABASE_URL, CORS_ORIGINS
+    database.py    # engine, SessionLocal, Base, get_db()
+    models.py      # todas as tabelas do schema (CATEGORY, PROJECT, TEAM, USERS, KEYWORDS + M2M)
+    schemas.py     # Pydantic v2 (Category, Project)
+    crud.py        # funções de acesso a dados
+    routers/
+      projects.py    # CRUD de projetos
+      categories.py  # listar/criar categorias
+  Dockerfile
+  requirements.txt
+```
 
-## 🚀 Como Rodar Localmente
+## 🌐 Endpoints
+- `GET  /health`
+- `GET  /categories`, `POST /categories`
+- `GET  /projects`, `POST /projects`, `GET /projects/{id}`, `PATCH /projects/{id}`, `DELETE /projects/{id}`
+- Docs interativas: `http://localhost:8000/docs`
 
-1. Acesse o diretório do backend:
+## 🚀 Como Rodar
+
+### Via Docker (recomendado — sobe API + Postgres juntos)
+A partir da **raiz do repositório**:
+```bash
+docker compose up --build
+```
+API em `http://localhost:8000`, Postgres em `localhost:5432`.
+
+### Localmente (sem Docker)
+Requer um Postgres 16 acessível. Configure a `DATABASE_URL` em `.env` (veja `.env.example`).
 ```bash
 cd backend
+python -m venv .venv && source .venv/bin/activate
+pip install -r requirements.txt
+uvicorn app.main:app --reload
+```
+
+## 🗄️ Banco de Dados
+As tabelas são criadas automaticamente no startup (`Base.metadata.create_all`) — adequado para o MVP.
+Quando o schema estabilizar, migrar para **Alembic**. O schema de origem está em `Database Schema.txt`
+(corrigidos no código: `tem_name` → `team_name`, `propose` → `purpose`).

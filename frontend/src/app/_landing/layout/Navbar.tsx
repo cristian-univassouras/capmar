@@ -84,7 +84,7 @@ export default function Navbar() {
           {/* Button (Loose when scrolled) */}
           <div className="shrink-0 pointer-events-auto">
             <Link
-              href="/start"
+              href="/register"
               className="group relative overflow-hidden bg-black border border-black px-5 sm:px-6 py-3 rounded-full text-sm font-bold transition-all duration-700 hover:bg-white shrink-0 whitespace-nowrap block"
             >
               <div className="relative flex items-center justify-center">

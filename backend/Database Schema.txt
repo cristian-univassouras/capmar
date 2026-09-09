@@ -1,0 +1,95 @@
+// Tabelas Principais
+
+Table CATEGORY {
+  id INTEGER [pk]
+  description TEXT
+}
+
+Table PROJECT {
+  project_id INTEGER [pk]
+  name VARCHAR(100)
+  description TEXT
+  template VARCHAR(100)
+  status VARCHAR(15)
+  visibility BOOLEAN
+  created_at DATE
+  category_id INTEGER
+}
+
+Table TEAM {
+  team_id INTEGER [pk]
+  tem_name VARCHAR(255)
+  propose TEXT
+  created_at DATE
+  project_id INTEGER
+}
+
+Table USERS {
+  user_id INTEGER [pk]
+  username VARCHAR(20)
+  first_name VARCHAR(20)
+  last_name VARCHAR(100)
+  email VARCHAR(50)
+  user_password CHAR // O tamanho não está explícito na imagem, mantido como CHAR padrão
+}
+
+Table KEYWORDS {
+  keyword_id INTEGER [pk]
+  word VARCHAR(20)
+  popularity INTEGER
+}
+
+// Tabelas de Relacionamento (Muitos para Muitos)
+
+Table PROJECT_USERS {
+  project_id INTEGER [pk]
+  user_id INTEGER [pk]
+}
+
+Table TEAM_USERS {
+  team_id INTEGER [pk]
+  user_id INTEGER [pk]
+}
+
+Table PROJECTS_KEYWORDS {
+  keyword_id INTEGER [pk]
+  project_id INTEGER [pk]
+}
+
+Table TEAM_KEYWORDS {
+  keyword_id INTEGER [pk]
+  team_id INTEGER [pk]
+}
+
+Table USER_KEYWORDS {
+  keyword_id INTEGER [pk]
+  user_id INTEGER [pk]
+}
+
+// Relacionamentos e Chaves Estrangeiras (Ref)
+
+// CATEGORY 1 ----- 0..* PROJECT
+Ref: CATEGORY.id < PROJECT.category_id
+
+// PROJECT 1 ----- 1..* TEAM
+Ref: PROJECT.project_id < TEAM.project_id
+
+// Relacionamentos da tabela PROJECT_USERS
+Ref: PROJECT.project_id < PROJECT_USERS.project_id
+Ref: USERS.user_id < PROJECT_USERS.user_id
+
+// Relacionamentos da tabela TEAM_USERS
+Ref: TEAM.team_id < TEAM_USERS.team_id
+Ref: USERS.user_id < TEAM_USERS.user_id
+
+// Relacionamentos da tabela PROJECTS_KEYWORDS
+Ref: KEYWORDS.keyword_id < PROJECTS_KEYWORDS.keyword_id
+Ref: PROJECT.project_id < PROJECTS_KEYWORDS.project_id
+
+// Relacionamentos da tabela TEAM_KEYWORDS
+Ref: KEYWORDS.keyword_id < TEAM_KEYWORDS.keyword_id
+Ref: TEAM.team_id < TEAM_KEYWORDS.team_id
+
+// Relacionamentos da tabela USER_KEYWORDS
+Ref: KEYWORDS.keyword_id < USER_KEYWORDS.keyword_id
+Ref: USERS.user_id < USER_KEYWORDS.user_id

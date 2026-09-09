@@ -1,140 +1,296 @@
-const members = [
-  { name: "Ana Souza", role: "Líder", skills: ["React", "Node.js"], status: "Ativo" },
-  { name: "Pedro Lima", role: "Dev Frontend", skills: ["Vue", "Figma"], status: "Ativo" },
-  { name: "Maria Costa", role: "Designer", skills: ["Figma", "UX"], status: "Ativo" },
-  { name: "Carlos Neto", role: "Backend", skills: ["Python", "AWS"], status: "Ativo" },
-  { name: "Lucia Braga", role: "QA", skills: ["Testing", "Cypress"], status: "Ativo" },
-  { name: "Rafael Torres", role: "Dev Mobile", skills: ["React Native"], status: "Ativo" },
-];
+"use client";
 
-const projects = [
-  { name: "EcoTrack", status: "Em Desenvolvimento", members: 4, tags: ["IA", "Mobile"] },
-  { name: "DataVis", status: "Concluído", members: 3, tags: ["Data", "Dashboard"] },
-];
+import Link from "next/link";
+import { useParams, useRouter } from "next/navigation";
+import { useEffect, useMemo, useState } from "react";
+
+import {
+  addTeamMember,
+  deleteTeam,
+  getStoredUser,
+  getTeam,
+  listUsers,
+  removeTeamMember,
+  updateTeam,
+  type Team,
+  type User,
+} from "@/lib/api";
+import { displayNameOf, formatDate } from "@/lib/format";
+import { Avatar } from "@/app/_components/media";
 
 export default function EquipePage() {
+  const params = useParams<{ id: string }>();
+  const teamId = Number(params.id);
+  const router = useRouter();
+
+  const [me, setMe] = useState<User | null>(null);
+  const [team, setTeam] = useState<Team | null>(null);
+  const [users, setUsers] = useState<User[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [notFound, setNotFound] = useState(false);
+
+  const [editing, setEditing] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const [addUserId, setAddUserId] = useState("");
+
+  useEffect(() => {
+    setMe(getStoredUser());
+    Promise.all([getTeam(teamId), listUsers()])
+      .then(([t, u]) => {
+        setTeam(t);
+        setUsers(u);
+      })
+      .catch(() => setNotFound(true))
+      .finally(() => setLoading(false));
+  }, [teamId]);
+
+  const isLeader = !!me && !!team && team.leader_id === me.user_id;
+
+  const addableUsers = useMemo(() => {
+    if (!team) return [];
+    const ids = new Set(team.members.map((m) => m.user_id));
+    return users.filter((u) => !ids.has(u.user_id));
+  }, [team, users]);
+
+  async function handleSave(e: React.FormEvent<HTMLFormElement>) {
+    e.preventDefault();
+    if (!team) return;
+    setError(null);
+    setSaving(true);
+    const form = new FormData(e.currentTarget);
+    try {
+      const updated = await updateTeam(team.team_id, {
+        team_name: String(form.get("team_name")),
+        purpose: String(form.get("purpose")) || null,
+      });
+      setTeam(updated);
+      setEditing(false);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Erro ao salvar.");
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  async function handleDelete() {
+    if (!team || !confirm("Excluir esta equipe?")) return;
+    try {
+      await deleteTeam(team.team_id);
+      router.push("/equipes");
+    } catch {
+      setError("Não foi possível excluir.");
+    }
+  }
+
+  async function handleAddMember() {
+    if (!team || !addUserId) return;
+    try {
+      const updated = await addTeamMember(team.team_id, Number(addUserId));
+      setTeam(updated);
+      setAddUserId("");
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Erro ao adicionar membro.");
+    }
+  }
+
+  async function handleRemoveMember(userId: number) {
+    if (!team) return;
+    try {
+      const updated = await removeTeamMember(team.team_id, userId);
+      setTeam(updated);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Erro ao remover membro.");
+    }
+  }
+
+  if (loading) {
+    return (
+      <div className="flex justify-center py-20">
+        <span className="h-8 w-8 animate-spin rounded-full border-2 border-primary/30 border-t-primary" />
+      </div>
+    );
+  }
+
+  if (notFound || !team) {
+    return (
+      <div className="max-w-4xl mx-auto text-center py-20">
+        <p className="text-gray-500">Equipe não encontrada.</p>
+        <Link href="/equipes" className="text-primary font-semibold text-sm hover:underline mt-3 inline-block">
+          ← Voltar para equipes
+        </Link>
+      </div>
+    );
+  }
+
   return (
-    <div className="max-w-4xl mx-auto space-y-6">
-      {/* Header */}
+    <div className="max-w-3xl mx-auto space-y-6">
+      <Link href="/equipes" className="text-sm text-gray-500 hover:text-primary inline-flex items-center gap-1">
+        ← Equipes
+      </Link>
+
       <div className="bg-white rounded-2xl border border-gray-100 overflow-hidden">
-        <div className="h-36 bg-gradient-to-r from-accent/80 to-primary" />
+        <div className="h-32 bg-gradient-to-r from-accent/80 to-primary" />
         <div className="px-6 pb-6">
           <div className="flex items-end justify-between -mt-10 mb-4">
             <div className="w-16 h-16 rounded-2xl bg-white border-4 border-white shadow-md flex items-center justify-center text-accent font-black text-xl font-heading shrink-0">
-              DS
+              {team.team_name.slice(0, 2).toUpperCase()}
             </div>
-            <div className="flex gap-2">
-              <button className="border border-primary text-primary text-sm font-semibold px-4 py-2 rounded-xl hover:bg-primary/5 transition-colors">
-                Seguir
-              </button>
-              <button className="bg-primary text-white text-sm font-semibold px-4 py-2 rounded-xl hover:bg-primary/90 transition-colors">
-                Solicitar Entrada
-              </button>
-            </div>
-          </div>
-
-          <div className="flex items-start justify-between gap-3 flex-wrap">
-            <div>
-              <h1 className="font-heading font-black text-2xl text-foreground">DevSquad</h1>
-              <p className="text-gray-500 text-sm mt-0.5">Universidade de Vassouras · Fundada em 2023</p>
-            </div>
-            <span className="shrink-0 text-xs font-semibold bg-blue-100 text-blue-700 px-3 py-1.5 rounded-xl">
-              Aberta para novos membros
-            </span>
-          </div>
-
-          <p className="text-gray-600 text-sm mt-3 leading-relaxed">
-            Equipe multidisciplinar focada em desenvolvimento de produtos digitais com impacto social. Reunimos devs, designers e gestores para criar soluções inovadoras.
-          </p>
-
-          <div className="flex flex-wrap gap-2 mt-4">
-            {["Full-Stack", "Mobile", "IA", "Design", "Open Source"].map((t) => (
-              <span key={t} className="text-xs font-semibold bg-primary/10 text-primary px-3 py-1.5 rounded-xl">{t}</span>
-            ))}
-          </div>
-
-          <div className="flex gap-6 mt-5">
-            {[{ label: "Membros", value: "6" }, { label: "Projetos", value: "2" }, { label: "Seguidores", value: "124" }].map((s) => (
-              <div key={s.label}>
-                <p className="font-heading font-black text-xl text-foreground">{s.value}</p>
-                <p className="text-xs text-gray-400">{s.label}</p>
-              </div>
-            ))}
-          </div>
-        </div>
-      </div>
-
-      <div className="grid md:grid-cols-3 gap-6">
-        {/* Membros */}
-        <div className="md:col-span-2 space-y-4">
-          <div className="flex items-center justify-between">
-            <h2 className="font-heading font-bold text-lg text-foreground">Membros</h2>
-            <span className="text-sm text-gray-400">6 ativos</span>
-          </div>
-          <div className="bg-white rounded-2xl border border-gray-100 divide-y divide-gray-50">
-            {members.map((m) => (
-              <div key={m.name} className="flex items-center gap-4 p-4 hover:bg-gray-50 transition-colors cursor-pointer">
-                <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold text-sm shrink-0">
-                  {m.name[0]}
-                </div>
-                <div className="flex-1 min-w-0">
-                  <p className="font-semibold text-sm text-gray-800">{m.name}</p>
-                  <p className="text-xs text-gray-400">{m.role}</p>
-                </div>
-                <div className="flex gap-1 flex-wrap justify-end">
-                  {m.skills.map((s) => (
-                    <span key={s} className="text-[10px] font-semibold bg-gray-100 text-gray-500 px-2 py-1 rounded-lg">{s}</span>
-                  ))}
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-
-        {/* Sidebar */}
-        <div className="space-y-4">
-          {/* Projetos da equipe */}
-          <div className="bg-white rounded-2xl border border-gray-100 p-5 space-y-4">
-            <h3 className="font-heading font-bold text-base text-foreground">Projetos</h3>
-            {projects.map((p) => (
-              <div key={p.name} className="space-y-2 cursor-pointer group">
-                <div className="flex items-center gap-2">
-                  <div className="w-8 h-8 rounded-xl bg-gray-100 shrink-0 group-hover:bg-primary/10 transition-colors" />
-                  <div className="flex-1 min-w-0">
-                    <p className="font-semibold text-sm text-gray-800 group-hover:text-primary transition-colors truncate">{p.name}</p>
-                    <p className="text-xs text-gray-400">{p.members} membros</p>
-                  </div>
-                </div>
-                <div className="flex items-center justify-between">
-                  <div className="flex gap-1">
-                    {p.tags.map((t) => (
-                      <span key={t} className="text-[10px] font-semibold bg-gray-100 text-gray-500 px-2 py-0.5 rounded-lg">{t}</span>
-                    ))}
-                  </div>
-                  <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-lg ${
-                    p.status === "Concluído" ? "bg-green-100 text-green-700" : "bg-blue-100 text-blue-700"
-                  }`}>
-                    {p.status}
-                  </span>
-                </div>
-              </div>
-            ))}
-          </div>
-
-          {/* Vagas abertas */}
-          <div className="bg-white rounded-2xl border border-gray-100 p-5 space-y-3">
-            <h3 className="font-heading font-bold text-base text-foreground">Vagas Abertas</h3>
-            {["Dev Mobile", "Designer UI"].map((vaga) => (
-              <div key={vaga} className="flex items-center justify-between">
-                <p className="text-sm text-gray-600">{vaga}</p>
-                <button className="text-xs font-semibold text-primary border border-primary/30 px-3 py-1 rounded-xl hover:bg-primary hover:text-white transition-colors">
-                  Candidatar
+            {!editing && isLeader && (
+              <div className="flex gap-2">
+                <button
+                  onClick={() => {
+                    setEditing(true);
+                    setError(null);
+                  }}
+                  className="border border-primary text-primary text-sm font-semibold px-4 py-2 rounded-xl hover:bg-primary/5 transition-colors"
+                >
+                  Editar
+                </button>
+                <button
+                  onClick={handleDelete}
+                  className="border border-gray-200 text-gray-500 text-sm font-semibold px-4 py-2 rounded-xl hover:border-accent hover:text-accent transition-colors"
+                >
+                  Excluir
                 </button>
               </div>
+            )}
+          </div>
+
+          {editing ? (
+            <form onSubmit={handleSave} className="space-y-4">
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-1.5">Nome da equipe</label>
+                <input
+                  name="team_name"
+                  defaultValue={team.team_name}
+                  required
+                  maxLength={255}
+                  className="w-full rounded-xl border border-gray-200 px-4 py-2.5 outline-none focus:border-primary focus:ring-2 focus:ring-primary/20"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-1.5">Propósito</label>
+                <textarea
+                  name="purpose"
+                  defaultValue={team.purpose ?? ""}
+                  rows={3}
+                  className="w-full rounded-xl border border-gray-200 px-4 py-2.5 outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 resize-none"
+                />
+              </div>
+              {error && <p className="rounded-xl bg-accent/10 px-4 py-2.5 text-sm font-medium text-accent">{error}</p>}
+              <div className="flex gap-2">
+                <button
+                  type="submit"
+                  disabled={saving}
+                  className="bg-primary text-white text-sm font-semibold px-6 py-2.5 rounded-xl hover:bg-primary/90 transition-colors disabled:opacity-60"
+                >
+                  {saving ? "Salvando..." : "Salvar"}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setEditing(false)}
+                  className="text-sm font-semibold text-gray-500 px-4 py-2.5 rounded-xl hover:bg-gray-50 transition-colors"
+                >
+                  Cancelar
+                </button>
+              </div>
+            </form>
+          ) : (
+            <>
+              <h1 className="font-heading font-black text-2xl text-foreground">{team.team_name}</h1>
+              <p className="text-gray-500 text-sm mt-0.5">
+                {team.leader ? `Liderada por @${team.leader.username}` : "Sem líder"} · Criada em{" "}
+                {formatDate(team.created_at)}
+              </p>
+              {team.purpose && <p className="text-gray-600 text-sm mt-3 leading-relaxed">{team.purpose}</p>}
+
+              {team.project && (
+                <Link
+                  href={`/projeto/${team.project.project_id}`}
+                  className="mt-5 border border-gray-100 rounded-xl p-3 flex items-center gap-3 bg-gray-50 hover:border-primary/30 transition-colors"
+                >
+                  <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center text-primary font-heading font-black text-xs shrink-0">
+                    {team.project.name.slice(0, 2).toUpperCase()}
+                  </div>
+                  <div>
+                    <p className="text-xs text-gray-400 font-medium">Projeto vinculado</p>
+                    <p className="font-semibold text-sm text-primary">{team.project.name}</p>
+                  </div>
+                </Link>
+              )}
+            </>
+          )}
+        </div>
+      </div>
+
+      {/* Membros */}
+      {!editing && (
+        <div className="space-y-3">
+          <div className="flex items-center justify-between">
+            <h2 className="font-heading font-bold text-lg text-foreground">Membros</h2>
+            <span className="text-sm text-gray-400">{team.members.length}</span>
+          </div>
+
+          {/* Adicionar membro (líder) */}
+          {isLeader && (
+            <div className="bg-white rounded-2xl border border-gray-100 p-4 flex gap-2">
+              <select
+                value={addUserId}
+                onChange={(e) => setAddUserId(e.target.value)}
+                className="flex-1 rounded-xl border border-gray-200 px-4 py-2.5 outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 bg-white text-sm"
+              >
+                <option value="">
+                  {addableUsers.length ? "Selecione um usuário..." : "Todos já são membros"}
+                </option>
+                {addableUsers.map((u) => (
+                  <option key={u.user_id} value={u.user_id}>
+                    {displayNameOf(u)} (@{u.username})
+                  </option>
+                ))}
+              </select>
+              <button
+                onClick={handleAddMember}
+                disabled={!addUserId}
+                className="bg-primary text-white text-sm font-semibold px-5 py-2.5 rounded-xl hover:bg-primary/90 transition-colors disabled:opacity-50"
+              >
+                Adicionar
+              </button>
+            </div>
+          )}
+
+          {error && !editing && (
+            <p className="rounded-xl bg-accent/10 px-4 py-2.5 text-sm font-medium text-accent">{error}</p>
+          )}
+
+          <div className="bg-white rounded-2xl border border-gray-100 divide-y divide-gray-50">
+            {team.members.map((member) => (
+              <div key={member.user_id} className="flex items-center gap-3 p-4">
+                <Avatar user={member} className="w-10 h-10 text-sm" />
+                <div className="flex-1 min-w-0">
+                  <p className="font-semibold text-sm text-gray-800 truncate">{displayNameOf(member)}</p>
+                  <p className="text-xs text-gray-400 truncate">@{member.username}</p>
+                </div>
+                {member.user_id === team.leader_id ? (
+                  <span className="text-xs font-semibold px-3 py-1 rounded-full bg-primary/10 text-primary">
+                    Líder
+                  </span>
+                ) : (
+                  isLeader && (
+                    <button
+                      onClick={() => handleRemoveMember(member.user_id)}
+                      className="text-xs font-semibold text-gray-400 hover:text-accent px-3 py-1 rounded-full hover:bg-accent/5 transition-colors"
+                    >
+                      Remover
+                    </button>
+                  )
+                )}
+              </div>
             ))}
           </div>
         </div>
-      </div>
+      )}
     </div>
   );
 }
