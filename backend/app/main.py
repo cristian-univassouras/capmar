@@ -1,3 +1,4 @@
+import logging
 import os
 from contextlib import asynccontextmanager
 
@@ -10,6 +11,8 @@ from . import models
 from .config import settings
 from .database import Base, SessionLocal, engine
 from .routers import auth, categories, posts, projects, teams, uploads, users
+
+logger = logging.getLogger(__name__)
 
 # Categorias iniciais para facilitar o cadastro de projetos.
 SEED_CATEGORIES = [
@@ -51,8 +54,20 @@ def seed_categories() -> None:
         db.commit()
 
 
+def warn_if_dev_secret_key() -> None:
+    if not settings.using_dev_secret_key:
+        return
+    logger.warning(
+        "SECRET_KEY não veio do ambiente: os JWTs estão sendo assinados com o "
+        "secret de desenvolvimento. Aceitável apenas em desenvolvimento local. "
+        'Em produção, defina SECRET_KEY no .env — gere com: python -c "import '
+        'secrets; print(secrets.token_urlsafe(48))"'
+    )
+
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
+    warn_if_dev_secret_key()
     # MVP: cria as tabelas no startup. Trocar por Alembic quando o schema estabilizar.
     Base.metadata.create_all(bind=engine)
     ensure_schema()

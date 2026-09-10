@@ -20,6 +20,8 @@ services:
     environment:
       DATABASE_URL: postgresql+psycopg2://${POSTGRES_USER:-capmar}:${POSTGRES_PASSWORD:-capmar}@db:5432/${POSTGRES_DB:-capmar}
       CORS_ORIGINS: ${CORS_ORIGINS:-http://localhost:3000}
+      SECRET_KEY: ${SECRET_KEY:?defina SECRET_KEY no .env}
+      ACCESS_TOKEN_EXPIRE_MINUTES: ${ACCESS_TOKEN_EXPIRE_MINUTES:-10080}
       UPLOAD_DIR: /app/uploads
     volumes:
       - uploads:/app/uploads
