@@ -12,3 +12,6 @@ venv/
 
 # Docker / dados locais
 pgdata/
+
+# Worktrees de subagentes (Claude Code)
+.claude/worktrees/
