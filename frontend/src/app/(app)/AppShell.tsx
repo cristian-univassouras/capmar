@@ -34,8 +34,10 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
     setUser(getStoredUser());
   }, []);
 
-  function handleLogout() {
-    clearSession();
+  // clearSession é assíncrono: o cookie é HttpOnly, só o backend o apaga.
+  // Espera a resposta antes de redirecionar para não sair com sessão viva.
+  async function handleLogout() {
+    await clearSession();
     router.replace("/login");
   }
 

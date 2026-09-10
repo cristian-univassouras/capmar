@@ -19,10 +19,10 @@ export type Author = {
   avatar_url: string | null;
 };
 
-function authHeader(): Record<string, string> {
-  const token = getToken();
-  return token ? { Authorization: `Bearer ${token}` } : {};
-}
+// O JWT viaja num cookie HttpOnly emitido pelo backend (US-026) — o JS não lê
+// nem envia o token à mão. Por isso todo fetch daqui usa `credentials: "include"`,
+// que manda o cookie mesmo em requisições cross-origin (o CORS do backend está
+// com `allow_credentials=True` e origens explícitas).
 
 export type AuthResponse = {
   access_token: string;
@@ -48,7 +48,8 @@ async function postJson<T>(path: string, body: unknown): Promise<T> {
   try {
     res = await fetch(`${API_URL}${path}`, {
       method: "POST",
-      headers: { "Content-Type": "application/json", ...authHeader() },
+      headers: { "Content-Type": "application/json" },
+      credentials: "include",
       body: JSON.stringify(body),
     });
   } catch {
@@ -131,7 +132,7 @@ export async function uploadImage(file: File): Promise<string> {
   try {
     res = await fetch(`${API_URL}/upload`, {
       method: "POST",
-      headers: authHeader(),
+      credentials: "include",
       body: form,
     });
   } catch {
@@ -154,7 +155,7 @@ export async function uploadImage(file: File): Promise<string> {
 async function getJson<T>(path: string): Promise<T> {
   let res: Response;
   try {
-    res = await fetch(`${API_URL}${path}`, { headers: authHeader() });
+    res = await fetch(`${API_URL}${path}`, { credentials: "include" });
   } catch {
     throw new Error("Não foi possível conectar ao servidor. Tente novamente.");
   }
@@ -165,7 +166,7 @@ async function getJson<T>(path: string): Promise<T> {
 async function deleteRequest(path: string): Promise<void> {
   let res: Response;
   try {
-    res = await fetch(`${API_URL}${path}`, { method: "DELETE", headers: authHeader() });
+    res = await fetch(`${API_URL}${path}`, { method: "DELETE", credentials: "include" });
   } catch {
     throw new Error("Não foi possível conectar ao servidor. Tente novamente.");
   }
@@ -173,7 +174,7 @@ async function deleteRequest(path: string): Promise<void> {
 }
 
 async function deleteJson<T>(path: string): Promise<T> {
-  const res = await fetch(`${API_URL}${path}`, { method: "DELETE", headers: authHeader() });
+  const res = await fetch(`${API_URL}${path}`, { method: "DELETE", credentials: "include" });
   if (!res.ok) throw new Error("Não foi possível concluir a ação.");
   return res.json() as Promise<T>;
 }
@@ -183,7 +184,8 @@ async function patchJson<T>(path: string, body: unknown): Promise<T> {
   try {
     res = await fetch(`${API_URL}${path}`, {
       method: "PATCH",
-      headers: { "Content-Type": "application/json", ...authHeader() },
+      headers: { "Content-Type": "application/json" },
+      credentials: "include",
       body: JSON.stringify(body),
     });
   } catch {
@@ -362,18 +364,28 @@ export function deletePost(id: number) {
   return deleteRequest(`/posts/${id}`);
 }
 
-const TOKEN_KEY = "capmar_token";
+// --- Sessão ---
+//
+// A sessão vive no cookie HttpOnly emitido pelo backend. O `localStorage` só
+// guarda uma cópia dos dados do usuário, para a primeira pintura da tela não
+// esperar a rede — NUNCA como fonte de autorização. Quem decide se a sessão é
+// válida é o servidor, via `getMe()`.
+
 const USER_KEY = "capmar_user";
+/** Chave usada antes do US-026, quando o JWT ficava no localStorage. */
+const LEGACY_TOKEN_KEY = "capmar_token";
+
+/** Sessão do usuário autenticado, confirmada pelo servidor. 401 vira erro. */
+export function getMe() {
+  return getJson<User>("/auth/me");
+}
 
 export function saveSession(auth: AuthResponse) {
   if (typeof window === "undefined") return;
-  localStorage.setItem(TOKEN_KEY, auth.access_token);
+  // O token vem no cookie; o corpo da resposta ainda o traz durante a
+  // migração, mas ele não é guardado em lugar nenhum.
+  localStorage.removeItem(LEGACY_TOKEN_KEY);
   localStorage.setItem(USER_KEY, JSON.stringify(auth.user));
-}
-
-export function getToken(): string | null {
-  if (typeof window === "undefined") return null;
-  return localStorage.getItem(TOKEN_KEY);
 }
 
 export function saveUser(user: User) {
@@ -392,8 +404,23 @@ export function getStoredUser(): User | null {
   }
 }
 
-export function clearSession() {
+/** Descarta o cache local do usuário. Não encerra a sessão no servidor. */
+export function clearStoredUser() {
   if (typeof window === "undefined") return;
-  localStorage.removeItem(TOKEN_KEY);
   localStorage.removeItem(USER_KEY);
+  localStorage.removeItem(LEGACY_TOKEN_KEY);
+}
+
+/**
+ * Encerra a sessão: limpa o cache local e pede ao backend que apague o cookie
+ * (só o servidor consegue, já que o cookie é HttpOnly).
+ */
+export async function clearSession() {
+  clearStoredUser();
+  if (typeof window === "undefined") return;
+  try {
+    await fetch(`${API_URL}/auth/logout`, { method: "POST", credentials: "include" });
+  } catch {
+    /* Sem rede: o cache local já saiu e o cookie expira sozinho. */
+  }
 }

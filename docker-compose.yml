@@ -22,6 +22,8 @@ services:
       CORS_ORIGINS: ${CORS_ORIGINS:-http://localhost:3000}
       SECRET_KEY: ${SECRET_KEY:?defina SECRET_KEY no .env}
       ACCESS_TOKEN_EXPIRE_MINUTES: ${ACCESS_TOKEN_EXPIRE_MINUTES:-10080}
+      COOKIE_SECURE: ${COOKIE_SECURE:-false}
+      COOKIE_SAMESITE: ${COOKIE_SAMESITE:-lax}
       UPLOAD_DIR: /app/uploads
     volumes:
       - uploads:/app/uploads

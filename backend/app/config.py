@@ -17,6 +17,16 @@ class Settings(BaseSettings):
     secret_key: str = DEV_SECRET_KEY
     access_token_expire_minutes: int = 60 * 24 * 7  # 7 dias
 
+    # Cookie que carrega o JWT (US-026). É HttpOnly sempre — o JS nunca lê o
+    # token. `cookie_secure` fica False em desenvolvimento (HTTP local não
+    # aceita cookie Secure) e DEVE ser True em produção, via COOKIE_SECURE.
+    # `cookie_samesite` aceita lax | strict | none; com `none` o navegador
+    # exige `secure=True`. Ver a decisão registrada na spec §4.1 sobre
+    # frontend e API em domínios diferentes.
+    cookie_name: str = "capmar_token"
+    cookie_secure: bool = False
+    cookie_samesite: str = "lax"
+
     # Diretório onde as imagens enviadas são salvas (montado em volume no Docker).
     upload_dir: str = "/app/uploads"
 

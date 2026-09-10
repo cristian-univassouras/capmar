@@ -1,5 +1,5 @@
 import jwt
-from fastapi import Depends, HTTPException, status
+from fastapi import Depends, HTTPException, Request, status
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from sqlalchemy.orm import Session
 
@@ -11,13 +11,33 @@ from .security import ALGORITHM
 bearer_scheme = HTTPBearer(auto_error=False)
 
 
+def _token_from_request(
+    request: Request, creds: HTTPAuthorizationCredentials | None
+) -> str | None:
+    """Extrai o JWT das duas origens aceitas durante a migração (US-026).
+
+    1. O cookie HttpOnly emitido por /auth/login e /auth/register — origem
+       oficial, invisível para o JavaScript.
+    2. O header `Authorization: Bearer` — fallback TEMPORÁRIO, mantido apenas
+       para não quebrar clientes durante a sprint. REMOVER no fechamento
+       (ver F5 do plano de implementação).
+    """
+    cookie_token = request.cookies.get(settings.cookie_name)
+    if cookie_token:
+        return cookie_token
+    if creds is not None:
+        return creds.credentials
+    return None
+
+
 def _user_from_credentials(
-    creds: HTTPAuthorizationCredentials | None, db: Session
+    request: Request, creds: HTTPAuthorizationCredentials | None, db: Session
 ) -> models.User | None:
-    if creds is None:
+    token = _token_from_request(request, creds)
+    if token is None:
         return None
     try:
-        payload = jwt.decode(creds.credentials, settings.secret_key, algorithms=[ALGORITHM])
+        payload = jwt.decode(token, settings.secret_key, algorithms=[ALGORITHM])
         user_id = int(payload["sub"])
     except (jwt.PyJWTError, KeyError, ValueError):
         return None
@@ -25,10 +45,11 @@ def _user_from_credentials(
 
 
 def get_current_user(
+    request: Request,
     creds: HTTPAuthorizationCredentials | None = Depends(bearer_scheme),
     db: Session = Depends(get_db),
 ) -> models.User:
-    user = _user_from_credentials(creds, db)
+    user = _user_from_credentials(request, creds, db)
     if user is None:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
@@ -39,7 +60,8 @@ def get_current_user(
 
 
 def get_current_user_optional(
+    request: Request,
     creds: HTTPAuthorizationCredentials | None = Depends(bearer_scheme),
     db: Session = Depends(get_db),
 ) -> models.User | None:
-    return _user_from_credentials(creds, db)
+    return _user_from_credentials(request, creds, db)
