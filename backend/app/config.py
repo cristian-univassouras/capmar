@@ -1,3 +1,5 @@
+from typing import Literal
+
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 # Secret usado apenas em desenvolvimento local, quando SECRET_KEY não vem do
@@ -21,11 +23,13 @@ class Settings(BaseSettings):
     # token. `cookie_secure` fica False em desenvolvimento (HTTP local não
     # aceita cookie Secure) e DEVE ser True em produção, via COOKIE_SECURE.
     # `cookie_samesite` aceita lax | strict | none; com `none` o navegador
-    # exige `secure=True`. Ver a decisão registrada na spec §4.1 sobre
-    # frontend e API em domínios diferentes.
+    # exige `secure=True`. O tipo é Literal de propósito: um valor errado no
+    # env derruba o boot com erro claro, em vez de virar 500 em todo login.
+    # Ver a decisão registrada na spec §4.1 sobre frontend e API em domínios
+    # diferentes.
     cookie_name: str = "capmar_token"
     cookie_secure: bool = False
-    cookie_samesite: str = "lax"
+    cookie_samesite: Literal["lax", "strict", "none"] = "lax"
 
     # Diretório onde as imagens enviadas são salvas (montado em volume no Docker).
     upload_dir: str = "/app/uploads"
