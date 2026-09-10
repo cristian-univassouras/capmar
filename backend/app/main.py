@@ -28,6 +28,10 @@ SEED_CATEGORIES = [
 # tabelas existentes, então garantimos as novas colunas de forma idempotente.
 # (Stopgap de MVP — substituir por Alembic quando o schema estabilizar.)
 _SCHEMA_PATCHES = [
+    # Necessaria para a busca ignorar acentos (US-007): sem ela, quem
+    # digita "marica" nao acha "Maricá" — o termo mais provavel da
+    # plataforma. Disponivel na imagem postgres:16-alpine.
+    "CREATE EXTENSION IF NOT EXISTS unaccent",
     "ALTER TABLE users ADD COLUMN IF NOT EXISTS avatar_url VARCHAR(255)",
     "ALTER TABLE project ADD COLUMN IF NOT EXISTS owner_id INTEGER",
     "ALTER TABLE project ADD COLUMN IF NOT EXISTS cover_url VARCHAR(255)",

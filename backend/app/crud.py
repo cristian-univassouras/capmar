@@ -179,7 +179,7 @@ def list_projects(
 ) -> list[models.Project]:
     """Lista projetos, opcionalmente filtrados por texto livre e/ou categoria.
 
-    `q` casa, sem diferenciar maiúsculas de minúsculas, com o nome, a descrição
+    `q` casa, sem diferenciar maiúsculas, minúsculas ou acentos, com o nome, a descrição
     ou uma das palavras-chave do projeto — é o que dá sentido à "busca
     inteligente" da US-010. Quando os dois filtros vêm juntos, eles se somam
     (AND). Termos com menos de `_BUSCA_MIN_LEN` caracteres são ignorados: casam
@@ -196,7 +196,12 @@ def list_projects(
 
     termo = (q or "").strip()
     if len(termo) >= _BUSCA_MIN_LEN:
-        padrao = f"%{termo}%"
+        # `unaccent` nos dois lados: o termo digitado e a coluna. Sem isso,
+        # "marica" nao acha "Maricá" — e esse e o termo mais provavel da
+        # plataforma. Custo: a funcao sobre a coluna impede uso de indice.
+        # Aceitavel no volume do MVP; se a base crescer, o caminho e um
+        # indice funcional sobre unaccent(name) ou trigramas (pg_trgm).
+        alvo = func.unaccent(f"%{termo}%")
         # `outerjoin` (e não `join`) para não sumir com os projetos que não
         # têm palavra-chave e ainda assim casam por nome ou descrição. O
         # `distinct()` existe porque o join multiplica a linha do projeto por
@@ -211,9 +216,9 @@ def list_projects(
             stmt.outerjoin(models.Project.keywords)
             .where(
                 or_(
-                    models.Project.name.ilike(padrao),
-                    models.Project.description.ilike(padrao),
-                    models.Keyword.word.ilike(padrao),
+                    func.unaccent(models.Project.name).ilike(alvo),
+                    func.unaccent(models.Project.description).ilike(alvo),
+                    func.unaccent(models.Keyword.word).ilike(alvo),
                 )
             )
             .distinct()
