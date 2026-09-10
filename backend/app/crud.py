@@ -25,7 +25,7 @@ def create_user(db: Session, data: schemas.UserCreate) -> models.User:
         user_password=hash_password(data.password),
     )
     db.add(user)
-    db.commit()
+    db.flush()
     db.refresh(user)
     return user
 
@@ -41,7 +41,7 @@ def list_users(db: Session) -> list[models.User]:
 def update_user(db: Session, user: models.User, data: schemas.UserUpdate) -> models.User:
     for field, value in data.model_dump(exclude_unset=True).items():
         setattr(user, field, value)
-    db.commit()
+    db.flush()
     db.refresh(user)
     return user
 
@@ -60,7 +60,7 @@ def get_category(db: Session, category_id: int) -> models.Category | None:
 def create_category(db: Session, data: schemas.CategoryCreate) -> models.Category:
     category = models.Category(**data.model_dump())
     db.add(category)
-    db.commit()
+    db.flush()
     db.refresh(category)
     return category
 
@@ -97,7 +97,7 @@ def get_project(db: Session, project_id: int) -> models.Project | None:
 def create_project(db: Session, data: schemas.ProjectCreate, owner_id: int) -> models.Project:
     project = models.Project(**data.model_dump(), owner_id=owner_id)
     db.add(project)
-    db.commit()
+    db.flush()
     db.refresh(project)
     return get_project(db, project.project_id)
 
@@ -107,14 +107,14 @@ def update_project(
 ) -> models.Project:
     for field, value in data.model_dump(exclude_unset=True).items():
         setattr(project, field, value)
-    db.commit()
+    db.flush()
     db.refresh(project)
     return project
 
 
 def delete_project(db: Session, project: models.Project) -> None:
     db.delete(project)
-    db.commit()
+    db.flush()
 
 
 # --- Team ---
@@ -142,38 +142,38 @@ def get_team(db: Session, team_id: int) -> models.Team | None:
 def create_team(db: Session, data: schemas.TeamCreate, leader_id: int) -> models.Team:
     team = models.Team(**data.model_dump(), leader_id=leader_id)
     db.add(team)
-    db.commit()
+    db.flush()
     db.refresh(team)
     # O criador é o líder e já entra como membro.
     leader = db.get(models.User, leader_id)
     if leader is not None:
         team.members.append(leader)
-        db.commit()
+        db.flush()
     return get_team(db, team.team_id)
 
 
 def update_team(db: Session, team: models.Team, data: schemas.TeamUpdate) -> models.Team:
     for field, value in data.model_dump(exclude_unset=True).items():
         setattr(team, field, value)
-    db.commit()
+    db.flush()
     return get_team(db, team.team_id)
 
 
 def delete_team(db: Session, team: models.Team) -> None:
     db.delete(team)
-    db.commit()
+    db.flush()
 
 
 def add_team_member(db: Session, team: models.Team, user: models.User) -> models.Team:
     if all(m.user_id != user.user_id for m in team.members):
         team.members.append(user)
-        db.commit()
+        db.flush()
     return get_team(db, team.team_id)
 
 
 def remove_team_member(db: Session, team: models.Team, user_id: int) -> models.Team:
     team.members = [m for m in team.members if m.user_id != user_id]
-    db.commit()
+    db.flush()
     return get_team(db, team.team_id)
 
 
@@ -198,14 +198,14 @@ def get_post(db: Session, post_id: int) -> models.Post | None:
 def create_post(db: Session, data: schemas.PostCreate, user_id: int) -> models.Post:
     post = models.Post(**data.model_dump(), user_id=user_id)
     db.add(post)
-    db.commit()
+    db.flush()
     db.refresh(post)
     return post
 
 
 def delete_post(db: Session, post: models.Post) -> None:
     db.delete(post)
-    db.commit()
+    db.flush()
 
 
 # --- Likes de projeto ---
@@ -218,14 +218,14 @@ def get_like(db: Session, project_id: int, user_id: int) -> models.ProjectLike |
 def add_like(db: Session, project_id: int, user_id: int) -> None:
     if get_like(db, project_id, user_id) is None:
         db.add(models.ProjectLike(project_id=project_id, user_id=user_id))
-        db.commit()
+        db.flush()
 
 
 def remove_like(db: Session, project_id: int, user_id: int) -> None:
     like = get_like(db, project_id, user_id)
     if like is not None:
         db.delete(like)
-        db.commit()
+        db.flush()
 
 
 def count_likes(db: Session, project_id: int) -> int:
@@ -258,11 +258,11 @@ def create_comment(
 ) -> models.ProjectComment:
     comment = models.ProjectComment(project_id=project_id, user_id=user_id, content=content)
     db.add(comment)
-    db.commit()
+    db.flush()
     db.refresh(comment)
     return comment
 
 
 def delete_comment(db: Session, comment: models.ProjectComment) -> None:
     db.delete(comment)
-    db.commit()
+    db.flush()
