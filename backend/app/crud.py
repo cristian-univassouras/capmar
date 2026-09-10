@@ -65,6 +65,73 @@ def create_category(db: Session, data: schemas.CategoryCreate) -> models.Categor
     return category
 
 
+# --- Palavras-chave ---
+
+
+# Limite da coluna `keywords.word` (VARCHAR(20) em models.Keyword).
+_KEYWORD_MAX_LEN = 20
+
+
+def _normalize_keywords(words: list[str]) -> list[str]:
+    """Normaliza a lista recebida do cliente.
+
+    Tira espaços das pontas, passa para minúsculas, trunca no limite da coluna,
+    descarta as vazias e deduplica preservando a ordem de entrada — de modo que
+    `["inovacao", "Maricá", " inovacao "]` resulte em `["inovacao", "maricá"]`.
+    """
+    normalized: list[str] = []
+    for raw in words:
+        # A truncagem pode deixar espaço na ponta, daí o segundo strip().
+        word = raw.strip().lower()[:_KEYWORD_MAX_LEN].strip()
+        if word and word not in normalized:
+            normalized.append(word)
+    return normalized
+
+
+def get_or_create_keywords(db: Session, words: list[str]) -> list[models.Keyword]:
+    """Resolve uma lista de textos nos registros de `Keyword` correspondentes.
+
+    Reaproveita as palavras já cadastradas e cria as que faltam. Não commita:
+    quem fecha a transação é o `get_db` (US-036).
+    """
+    normalized = _normalize_keywords(words)
+    if not normalized:
+        return []
+
+    existing = {
+        kw.word: kw
+        for kw in db.scalars(
+            select(models.Keyword).where(models.Keyword.word.in_(normalized))
+        )
+    }
+
+    keywords: list[models.Keyword] = []
+    created = False
+    for word in normalized:
+        keyword = existing.get(word)
+        if keyword is None:
+            keyword = models.Keyword(word=word, popularity=0)
+            db.add(keyword)
+            existing[word] = keyword
+            created = True
+        keywords.append(keyword)
+
+    if created:
+        # Garante o keyword_id das recém-criadas antes de compará-las/associá-las.
+        db.flush()
+    return keywords
+
+
+def list_keywords(db: Session, limit: int = 20) -> list[models.Keyword]:
+    """Palavras-chave mais usadas primeiro (`word` desempata, para dar ordem estável)."""
+    stmt = (
+        select(models.Keyword)
+        .order_by(models.Keyword.popularity.desc(), models.Keyword.word)
+        .limit(limit)
+    )
+    return list(db.scalars(stmt))
+
+
 # --- Project ---
 
 
@@ -73,7 +140,30 @@ _PROJECT_LOADS = (
     selectinload(models.Project.owner),
     selectinload(models.Project.likes),
     selectinload(models.Project.comments),
+    selectinload(models.Project.keywords),
 )
+
+
+def _set_project_keywords(db: Session, project: models.Project, words: list[str]) -> None:
+    """Substitui as palavras-chave do projeto, ajustando a popularidade.
+
+    `popularity` conta associações: sobe a cada vínculo novo e desce quando um
+    vínculo existente é desfeito (nunca abaixo de zero).
+    """
+    keywords = get_or_create_keywords(db, words)
+    current_ids = {kw.keyword_id for kw in project.keywords}
+    new_ids = {kw.keyword_id for kw in keywords}
+
+    for keyword in keywords:
+        if keyword.keyword_id not in current_ids:
+            keyword.popularity = (keyword.popularity or 0) + 1
+
+    for keyword in project.keywords:
+        if keyword.keyword_id not in new_ids:
+            keyword.popularity = max((keyword.popularity or 0) - 1, 0)
+
+    project.keywords = keywords
+    db.flush()
 
 
 def list_projects(db: Session, skip: int = 0, limit: int = 100) -> list[models.Project]:
@@ -95,9 +185,14 @@ def get_project(db: Session, project_id: int) -> models.Project | None:
 
 
 def create_project(db: Session, data: schemas.ProjectCreate, owner_id: int) -> models.Project:
-    project = models.Project(**data.model_dump(), owner_id=owner_id)
+    # `keywords` não é coluna do modelo: fica de fora do construtor e é
+    # associada à parte, na mesma transação (US-036).
+    fields = data.model_dump(exclude={"keywords"})
+    project = models.Project(**fields, owner_id=owner_id)
     db.add(project)
     db.flush()
+    if data.keywords:
+        _set_project_keywords(db, project, data.keywords)
     db.refresh(project)
     return get_project(db, project.project_id)
 
@@ -105,8 +200,14 @@ def create_project(db: Session, data: schemas.ProjectCreate, owner_id: int) -> m
 def update_project(
     db: Session, project: models.Project, data: schemas.ProjectUpdate
 ) -> models.Project:
-    for field, value in data.model_dump(exclude_unset=True).items():
+    fields = data.model_dump(exclude_unset=True)
+    # `keywords` não é coluna do modelo — sai do dict antes do setattr.
+    # Ausente no PATCH: mantém as atuais. `[]`: remove todas.
+    keywords = fields.pop("keywords", None)
+    for field, value in fields.items():
         setattr(project, field, value)
+    if keywords is not None:
+        _set_project_keywords(db, project, keywords)
     db.flush()
     db.refresh(project)
     return project

@@ -9,7 +9,7 @@ from sqlalchemy import select, text
 from . import models
 from .config import settings
 from .database import Base, SessionLocal, engine
-from .routers import auth, categories, posts, projects, teams, uploads, users
+from .routers import auth, categories, keywords, posts, projects, teams, uploads, users
 
 # Categorias iniciais para facilitar o cadastro de projetos.
 SEED_CATEGORIES = [
@@ -73,6 +73,7 @@ app.add_middleware(
 
 app.include_router(auth.router)
 app.include_router(categories.router)
+app.include_router(keywords.router)
 app.include_router(projects.router)
 app.include_router(teams.router)
 app.include_router(users.router)

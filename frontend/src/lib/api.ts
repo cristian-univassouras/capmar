@@ -88,6 +88,12 @@ export type Category = {
   description: string;
 };
 
+export type Keyword = {
+  keyword_id: number;
+  word: string;
+  popularity: number;
+};
+
 export type Project = {
   project_id: number;
   name: string;
@@ -105,6 +111,7 @@ export type Project = {
   likes_count: number;
   comments_count: number;
   liked_by_me: boolean;
+  keywords: Keyword[];
 };
 
 export type ProjectPayload = {
@@ -115,6 +122,8 @@ export type ProjectPayload = {
   category_id?: number | null;
   cover_url?: string | null;
   logo_url?: string | null;
+  /** No máximo 10. Omitir no PATCH mantém as atuais; `[]` remove todas. */
+  keywords?: string[];
 };
 
 /** Prefixa o host da API em caminhos de imagem salvos como /uploads/xxx. */
@@ -224,6 +233,11 @@ export function deleteProject(id: number) {
 
 export function listCategories() {
   return getJson<Category[]>("/categories");
+}
+
+/** Palavras-chave mais populares (para autocomplete de tags). */
+export function listKeywords(limit = 20) {
+  return getJson<Keyword[]>(`/keywords?limit=${limit}`);
 }
 
 // --- Likes / Comentários ---

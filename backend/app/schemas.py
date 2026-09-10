@@ -2,6 +2,9 @@ from datetime import date
 
 from pydantic import BaseModel, ConfigDict, EmailStr, Field
 
+# Máximo de palavras-chave por projeto (US-010).
+MAX_KEYWORDS = 10
+
 
 # --- Auth / User ---
 
@@ -83,6 +86,17 @@ class CategoryRead(CategoryBase):
     id: int
 
 
+# --- Keyword / Palavra-chave ---
+
+
+class KeywordRead(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    keyword_id: int
+    word: str
+    popularity: int
+
+
 # --- Project ---
 
 
@@ -98,7 +112,8 @@ class ProjectBase(BaseModel):
 
 
 class ProjectCreate(ProjectBase):
-    pass
+    # Texto livre — a normalização (minúsculas, dedupe, truncagem) fica no crud.
+    keywords: list[str] | None = Field(default=None, max_length=MAX_KEYWORDS)
 
 
 class ProjectUpdate(BaseModel):
@@ -112,6 +127,8 @@ class ProjectUpdate(BaseModel):
     category_id: int | None = None
     cover_url: str | None = Field(default=None, max_length=255)
     logo_url: str | None = Field(default=None, max_length=255)
+    # Ausente: mantém as palavras-chave atuais. `[]`: remove todas.
+    keywords: list[str] | None = Field(default=None, max_length=MAX_KEYWORDS)
 
 
 class ProjectRead(ProjectBase):
@@ -125,6 +142,7 @@ class ProjectRead(ProjectBase):
     likes_count: int = 0
     comments_count: int = 0
     liked_by_me: bool = False
+    keywords: list[KeywordRead] = []
 
 
 # --- Team ---
