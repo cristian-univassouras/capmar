@@ -1,4 +1,4 @@
-from sqlalchemy import func, select
+from sqlalchemy import func, or_, select
 from sqlalchemy.orm import Session, selectinload
 
 from . import models, schemas
@@ -135,6 +135,10 @@ def list_keywords(db: Session, limit: int = 20) -> list[models.Keyword]:
 # --- Project ---
 
 
+# Tamanho mínimo do termo de busca textual em `list_projects`.
+_BUSCA_MIN_LEN = 2
+
+
 _PROJECT_LOADS = (
     selectinload(models.Project.category),
     selectinload(models.Project.owner),
@@ -166,14 +170,56 @@ def _set_project_keywords(db: Session, project: models.Project, words: list[str]
     db.flush()
 
 
-def list_projects(db: Session, skip: int = 0, limit: int = 100) -> list[models.Project]:
+def list_projects(
+    db: Session,
+    skip: int = 0,
+    limit: int = 100,
+    q: str | None = None,
+    category_id: int | None = None,
+) -> list[models.Project]:
+    """Lista projetos, opcionalmente filtrados por texto livre e/ou categoria.
+
+    `q` casa, sem diferenciar maiúsculas de minúsculas, com o nome, a descrição
+    ou uma das palavras-chave do projeto — é o que dá sentido à "busca
+    inteligente" da US-010. Quando os dois filtros vêm juntos, eles se somam
+    (AND). Termos com menos de `_BUSCA_MIN_LEN` caracteres são ignorados: casam
+    com quase tudo e não ajudam ninguém.
+    """
     stmt = (
         select(models.Project)
         .options(*_PROJECT_LOADS)
         .order_by(models.Project.project_id.desc())
-        .offset(skip)
-        .limit(limit)
     )
+
+    if category_id is not None:
+        stmt = stmt.where(models.Project.category_id == category_id)
+
+    termo = (q or "").strip()
+    if len(termo) >= _BUSCA_MIN_LEN:
+        padrao = f"%{termo}%"
+        # `outerjoin` (e não `join`) para não sumir com os projetos que não
+        # têm palavra-chave e ainda assim casam por nome ou descrição. O
+        # `distinct()` existe porque o join multiplica a linha do projeto por
+        # palavra-chave: quem casa em duas viria duas vezes.
+        #
+        # O DISTINCT incide só sobre as colunas de `project` — a lista do SELECT
+        # é a entidade `Project`, o join não acrescenta colunas —, então não há
+        # risco de a mesma linha "escapar" por diferir em `keywords.word`. E os
+        # `selectinload` de `_PROJECT_LOADS` não entram nesta consulta: cada um
+        # dispara um SELECT próprio depois, filtrado pelos ids já apurados aqui.
+        stmt = (
+            stmt.outerjoin(models.Project.keywords)
+            .where(
+                or_(
+                    models.Project.name.ilike(padrao),
+                    models.Project.description.ilike(padrao),
+                    models.Keyword.word.ilike(padrao),
+                )
+            )
+            .distinct()
+        )
+
+    stmt = stmt.offset(skip).limit(limit)
     return list(db.scalars(stmt))
 
 

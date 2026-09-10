@@ -25,10 +25,21 @@ def _require_owner(project: models.Project, user: models.User) -> None:
 def list_projects(
     skip: int = 0,
     limit: int = 100,
+    q: str | None = None,
+    category_id: int | None = None,
     db: Session = Depends(get_db),
     user: models.User | None = Depends(get_current_user_optional),
 ):
-    return [_annotate(p, user) for p in crud.list_projects(db, skip=skip, limit=limit)]
+    """Lista projetos (US-007/US-008).
+
+    `q` busca no nome, na descrição e nas palavras-chave; `category_id` restringe
+    à categoria. Ambos são opcionais e combináveis. O `response_model` não muda,
+    de modo que quem já consome a rota sem filtro continua valendo.
+    """
+    projects = crud.list_projects(
+        db, skip=skip, limit=limit, q=q, category_id=category_id
+    )
+    return [_annotate(p, user) for p in projects]
 
 
 @router.post("", response_model=schemas.ProjectRead, status_code=status.HTTP_201_CREATED)

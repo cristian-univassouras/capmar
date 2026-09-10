@@ -160,10 +160,10 @@ export async function uploadImage(file: File): Promise<string> {
   return data.url;
 }
 
-async function getJson<T>(path: string): Promise<T> {
+async function getJson<T>(path: string, signal?: AbortSignal): Promise<T> {
   let res: Response;
   try {
-    res = await fetch(`${API_URL}${path}`, { headers: authHeader() });
+    res = await fetch(`${API_URL}${path}`, { headers: authHeader(), signal });
   } catch {
     throw new Error("Não foi possível conectar ao servidor. Tente novamente.");
   }
@@ -211,8 +211,23 @@ async function patchJson<T>(path: string, body: unknown): Promise<T> {
   return res.json() as Promise<T>;
 }
 
-export function listProjects() {
-  return getJson<Project[]>("/projects");
+/**
+ * Lista projetos, opcionalmente filtrados por texto livre (`q`, que casa com
+ * nome, descrição e palavras-chave) e/ou por categoria. Sem argumentos devolve
+ * a listagem completa, como antes.
+ *
+ * O `signal` permite cancelar a requisição anterior a cada tecla digitada
+ * (US-007), evitando resposta fora de ordem.
+ */
+export function listProjects(
+  params?: { q?: string; category_id?: number },
+  signal?: AbortSignal
+) {
+  const qs = new URLSearchParams();
+  if (params?.q) qs.set("q", params.q);
+  if (params?.category_id) qs.set("category_id", String(params.category_id));
+  const suffix = qs.toString() ? `?${qs}` : "";
+  return getJson<Project[]>(`/projects${suffix}`, signal);
 }
 
 export function getProject(id: number) {
