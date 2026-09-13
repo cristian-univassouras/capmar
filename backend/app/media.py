@@ -100,6 +100,6 @@ def can_read_upload(db, upload, user):
         return project is not None and url in (project.cover_url, project.logo_url) and can_read_project(db, rid, user)
     if kind == "post":
         post = db.get(models.Post, rid)
-        return (post is not None and post.image_url == url and
+        return (post is not None and not post.is_hidden and post.image_url == url and
                 (post.project_id is None or can_read_project(db, post.project_id, user)))
     return False

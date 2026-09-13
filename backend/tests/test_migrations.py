@@ -32,7 +32,7 @@ def test_new_and_existing_database_upgrade(monkeypatch, legacy):
         command.upgrade(Config("alembic.ini"), "head")
         command.upgrade(Config("alembic.ini"), "head")  # repetível
         with isolated.connect() as conn:
-            assert conn.scalar(text("SELECT version_num FROM alembic_version")) == "0003_vitrine"
+            assert conn.scalar(text("SELECT version_num FROM alembic_version")) == "0004_engagement"
             assert conn.scalar(text("SELECT count(*) FROM category")) == 8
             assert {"auth_sessions", "media_uploads", "rate_buckets"}.issubset(inspect(conn).get_table_names())
             if legacy:
@@ -60,7 +60,7 @@ def test_database_roles_allow_dml_and_deny_ddl():
             conn.execute(text(f"REVOKE INSERT, UPDATE, DELETE ON alembic_version FROM {app_role}"))
         with database.engine.begin() as conn:
             conn.execute(text(f"SET LOCAL ROLE {app_role}"))
-            assert conn.scalar(text("SELECT version_num FROM alembic_version")) == "0003_vitrine"
+            assert conn.scalar(text("SELECT version_num FROM alembic_version")) == "0004_engagement"
             conn.execute(text("INSERT INTO users (username,email,user_password) VALUES ('limited','limited@example.com','hash')"))
             with pytest.raises(ProgrammingError):
                 with conn.begin_nested():

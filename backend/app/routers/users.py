@@ -1,5 +1,6 @@
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.orm import Session
+from sqlalchemy import select
 
 from .. import crud, models, schemas
 from ..database import get_db
@@ -11,8 +12,9 @@ router = APIRouter(prefix="/users", tags=["users"])
 
 @router.get("", response_model=list[schemas.PublicUser])
 def list_users(db: Session = Depends(get_db, scope="function"),
-               skip: int = Query(0, ge=0, le=10000), limit: int = Query(100, ge=1, le=100)):
-    return crud.list_users(db, skip=skip, limit=limit)
+               q: str = Query("", max_length=100), skip: int = Query(0, ge=0, le=10000), limit: int = Query(100, ge=1, le=100)):
+    term = "%" + q.replace("%", "\\%").replace("_", "\\_") + "%"
+    return list(db.scalars(select(models.User).where(models.User.is_active, models.User.username.ilike(term)).order_by(models.User.user_id).offset(skip).limit(limit)))
 
 
 @router.get("/{user_id}", response_model=schemas.PublicUser)
@@ -35,6 +37,9 @@ def update_user(
         raise HTTPException(status_code=404, detail="Usuário não encontrado")
     if current.user_id != user_id:
         raise HTTPException(status_code=403, detail="Você só pode editar o seu próprio perfil")
+
+    if current.role == "admin" and payload.email is not None and payload.email != current.email:
+        raise HTTPException(403, "Alteração do e-mail administrativo exige procedimento de recuperação auditado")
 
     if payload.email is not None and payload.email != user.email:
         existing = crud.get_user_by_email(db, payload.email)

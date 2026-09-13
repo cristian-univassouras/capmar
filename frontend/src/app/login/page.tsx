@@ -23,10 +23,11 @@ export default function LoginPage() {
       const auth = await login({
         email: String(form.get("email")),
         password: String(form.get("password")),
+        otp: String(form.get("otp") || "") || undefined,
       });
       saveSession(auth);
       const next = new URLSearchParams(window.location.search).get("next");
-      const safeNext = next && /^\/(projeto\/\d+|projetos|feed|perfil|equipes|equipe\/\d+)$/.test(next) ? next : "/feed";
+      const safeNext = next && /^\/(projeto\/\d+|projetos|feed|perfil|admin|chat|seguranca|equipes|equipe\/\d+)$/.test(next) ? next : "/feed";
       router.push(safeNext);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Erro ao entrar.");
@@ -67,6 +68,8 @@ export default function LoginPage() {
           autoComplete="current-password"
           required
         />
+
+        <Field id="otp" name="otp" label="Código do autenticador (se ativado)" inputMode="numeric" pattern="[0-9]{6}" maxLength={6} autoComplete="one-time-code" />
 
         {error && (
           <p className="rounded-2xl bg-accent/10 px-4 py-3 text-sm font-medium text-accent">

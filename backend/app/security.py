@@ -36,7 +36,7 @@ def create_access_token(subject: str | int, session_id: str) -> str:
                       settings.secret_key, algorithm=ALGORITHM)
 
 
-def new_session(db, user_id: int) -> str:
+def new_session(db, user_id: int, admin_verified=False) -> str:
     from .models import AuthSession, User
 
     # Serializa criação de sessões inclusive entre workers.
@@ -48,6 +48,7 @@ def new_session(db, user_id: int) -> str:
     db.execute(delete(AuthSession).where(AuthSession.user_id == user_id, AuthSession.expires_at <= int(time.time())))
     session_id = secrets.token_hex(32)
     db.add(AuthSession(session_id=session_id, user_id=user_id,
-                       expires_at=int(time.time()) + settings.access_token_expire_minutes * 60))
+                       expires_at=int(time.time()) + settings.access_token_expire_minutes * 60,
+                       admin_verified_until=int(time.time()) + 600 if admin_verified else 0))
     db.flush()
     return create_access_token(user_id, session_id)

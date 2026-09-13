@@ -8,6 +8,9 @@ from sqlalchemy import (
     Table,
     Text,
     LargeBinary,
+    BigInteger,
+    DateTime,
+    UniqueConstraint,
 )
 from sqlalchemy.orm import relationship, deferred, column_property
 from sqlalchemy import select, CheckConstraint
@@ -79,6 +82,10 @@ class Project(Base):
     owner_id = Column(Integer, ForeignKey("users.user_id", ondelete="SET NULL"), nullable=True, index=True)
     cover_url = Column(String(255), nullable=True)
     logo_url = Column(String(255), nullable=True)
+    authorship = Column(String(16), nullable=False, default="individual", server_default="individual")
+    responsible_names = Column(String(500), nullable=True)
+    funding_url = Column(String(2048), nullable=True)
+    funding_description = Column(String(300), nullable=True)
 
     category = relationship("Category", back_populates="projects")
     owner = relationship("User", foreign_keys=[owner_id])
@@ -118,6 +125,16 @@ class User(Base):
     email = Column(String(50), unique=True, nullable=False)
     user_password = Column(String(255), nullable=False)
     avatar_url = Column(String(255), nullable=True)
+    role = Column(String(16), nullable=False, default="user", server_default="user")
+    is_active = Column(Boolean, nullable=False, default=True, server_default="true")
+    mfa_secret = deferred(Column(Text, nullable=True))
+    mfa_pending = deferred(Column(Text, nullable=True))
+    mfa_pending_until = Column(Integer, nullable=False, default=0, server_default="0")
+    mfa_last_step = Column(BigInteger, nullable=False, default=-1, server_default="-1")
+
+    @property
+    def mfa_enabled(self):
+        return self.mfa_secret is not None
 
     projects = relationship("Project", secondary=project_users, back_populates="members")
     keywords = relationship("Keyword", secondary=user_keywords)
@@ -139,6 +156,7 @@ class Post(Base):
 
     post_id = Column(Integer, primary_key=True)
     content = Column(Text, nullable=False)
+    is_hidden = Column(Boolean, nullable=False, default=False, server_default="false")
     image_url = Column(String(255), nullable=True)
     created_at = Column(Date, nullable=False, server_default=func.current_date())
     user_id = Column(Integer, ForeignKey("users.user_id", ondelete="CASCADE"), nullable=False)
@@ -180,6 +198,7 @@ class AuthSession(Base):
     session_id = Column(String(64), primary_key=True)
     user_id = Column(Integer, ForeignKey("users.user_id", ondelete="CASCADE"), nullable=False, index=True)
     expires_at = Column(Integer, nullable=False, index=True)
+    admin_verified_until = Column(Integer, nullable=False, default=0, server_default="0")
 
 
 class RateBucket(Base):
@@ -187,6 +206,52 @@ class RateBucket(Base):
     key = Column(String(64), primary_key=True)
     window = Column(Integer, primary_key=True)
     count = Column(Integer, nullable=False)
+
+
+class AuditLog(Base):
+    __tablename__ = "audit_logs"
+    audit_id = Column(BigInteger, primary_key=True)
+    actor_id = Column(Integer, nullable=True)  # Snapshot de ID: preservado após exclusões.
+    action = Column(String(64), nullable=False)
+    target_type = Column(String(32), nullable=False)
+    target_id = Column(Integer, nullable=True)
+    reason = Column(String(500), nullable=False)
+    details = Column(Text, nullable=False, default="{}")
+    created_at = Column(DateTime(timezone=True), nullable=False, server_default=func.now())
+
+
+class Conversation(Base):
+    __tablename__ = "conversations"
+    conversation_id = Column(Integer, primary_key=True)
+    title = Column(String(100), nullable=False)
+    created_at = Column(DateTime(timezone=True), nullable=False, server_default=func.now())
+    participants = relationship("User", secondary="conversation_participants", lazy="selectin")
+
+
+class ConversationParticipant(Base):
+    __tablename__ = "conversation_participants"
+    conversation_id = Column(Integer, ForeignKey("conversations.conversation_id", ondelete="CASCADE"), primary_key=True)
+    user_id = Column(Integer, ForeignKey("users.user_id", ondelete="CASCADE"), primary_key=True, index=True)
+
+
+class ChatMessage(Base):
+    __tablename__ = "chat_messages"
+    __table_args__ = (UniqueConstraint("conversation_id", "sender_id", "client_id", name="chat_idempotency"),
+                      CheckConstraint("length(trim(content)) BETWEEN 1 AND 2000", name="chat_content"))
+    message_id = Column(BigInteger, primary_key=True)
+    conversation_id = Column(Integer, ForeignKey("conversations.conversation_id", ondelete="CASCADE"), nullable=False, index=True)
+    sender_id = Column(Integer, ForeignKey("users.user_id", ondelete="CASCADE"), nullable=False)
+    client_id = Column(String(36), nullable=False)
+    content = Column(String(2000), nullable=False)
+    created_at = Column(DateTime(timezone=True), nullable=False, server_default=func.now())
+    sender = relationship("User", lazy="joined")
+
+
+class ChatLease(Base):
+    __tablename__ = "chat_leases"
+    lease_id = Column(String(32), primary_key=True)
+    user_id = Column(Integer, ForeignKey("users.user_id", ondelete="CASCADE"), nullable=False, index=True)
+    expires_at = Column(Integer, nullable=False, index=True)
 
 
 class Upload(Base):

@@ -226,6 +226,7 @@ def remove_team_member(db: Session, team: models.Team, user_id: int) -> models.T
 def list_posts(db: Session, user_id: int | None = None, user=None, skip=0, limit=100) -> list[models.Post]:
     stmt = (
         select(models.Post)
+        .where(models.Post.is_hidden.is_(False))
         .options(selectinload(models.Post.author), selectinload(models.Post.project))
         .where(or_(models.Post.project_id.is_(None), models.Post.project_id.in_(
             select(models.Project.project_id).where(project_access(user)))))

@@ -17,3 +17,6 @@ GRANT USAGE, SELECT ON ALL SEQUENCES IN SCHEMA public TO capmar_app;
 -- Banco legado: antes de migrar, transfira ownership das tabelas/sequências
 -- da aplicação para capmar_migrator. Não use REASSIGN OWNED de um superusuário
 -- indiscriminadamente; revise o inventário em docs/seguranca-integridade.md.
+
+-- Após a migração 0004, auditoria permite somente consulta e acréscimo:
+-- REVOKE UPDATE, DELETE, TRUNCATE ON audit_logs FROM capmar_app;

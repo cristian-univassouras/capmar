@@ -20,4 +20,5 @@ services:
       args:
         NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:?Defina a URL HTTPS pública da API}
     environment:
+      SITE_URL: ${SITE_URL:?Defina a URL HTTPS canônica do site}
       NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:?Defina a URL HTTPS pública da API}

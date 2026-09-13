@@ -2,6 +2,9 @@ export const API_URL =
   process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
 
 export type User = {
+  role: "user" | "admin";
+  is_active: boolean;
+  mfa_enabled: boolean;
   user_id: number;
   username: string;
   first_name: string | null;
@@ -37,6 +40,7 @@ export type RegisterPayload = {
 };
 
 export type LoginPayload = {
+  otp?: string;
   email: string;
   password: string;
 };
@@ -56,7 +60,7 @@ async function apiFetch(input: RequestInfo | URL, init?: RequestInit): Promise<R
   return response;
 }
 
-async function postJson<T>(path: string, body: unknown): Promise<T> {
+export async function postJson<T>(path: string, body: unknown): Promise<T> {
   let res: Response;
   try {
     res = await apiFetch(`${API_URL}${path}`, {
@@ -104,6 +108,11 @@ export type Category = {
 };
 
 export type Project = {
+  authorship?: "individual" | "group";
+  responsible_names?: string | null;
+  funding_url?: string | null;
+  funding_description?: string | null;
+
   project_id: number;
   name: string;
   description: string | null;
@@ -124,6 +133,11 @@ export type Project = {
 };
 
 export type ProjectPayload = {
+  authorship?: "individual" | "group";
+  responsible_names?: string | null;
+  funding_url?: string | null;
+  funding_description?: string | null;
+
   name: string;
   description?: string | null;
   status?: string;
@@ -170,7 +184,7 @@ export async function uploadImage(file: File): Promise<string> {
   return data.url;
 }
 
-async function getJson<T>(path: string): Promise<T> {
+export async function getJson<T>(path: string): Promise<T> {
   let res: Response;
   try {
     res = await apiFetch(`${API_URL}${path}`, { credentials: "include" });
@@ -199,7 +213,7 @@ async function deleteJson<T>(path: string): Promise<T> {
   return res.json() as Promise<T>;
 }
 
-async function patchJson<T>(path: string, body: unknown): Promise<T> {
+export async function patchJson<T>(path: string, body: unknown): Promise<T> {
   let res: Response;
   try {
     res = await apiFetch(`${API_URL}${path}`, {

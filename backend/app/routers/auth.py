@@ -8,6 +8,7 @@ from ..database import get_db
 from ..deps import get_current_user, session_from_request
 from ..limits import client_ip, consume
 from ..security import new_session, verify_password
+from ..mfa import verify_mfa
 
 router = APIRouter(prefix="/auth", tags=["auth"])
 DUMMY_HASH = bcrypt.hashpw(b"invalid-password", bcrypt.gensalt()).decode()
@@ -24,7 +25,7 @@ def _start_session(request, response, db, user):
     if previous:
         db.delete(previous)
         db.flush()
-    _set_auth_cookie(response, new_session(db, user.user_id))
+    _set_auth_cookie(response, new_session(db, user.user_id, admin_verified=user.role == "admin" and user.mfa_enabled))
     return schemas.AuthResponse(user=user)
 
 
@@ -47,8 +48,10 @@ def login(payload: schemas.LoginRequest, request: Request, response: Response,
     consume("login-account:" + str(payload.email).lower(), settings.login_limit, 900)
     user = crud.get_user_by_email(db, payload.email)
     valid = verify_password(payload.password, user.user_password if user else DUMMY_HASH)
-    if user is None or not valid:
+    if user is None or not valid or not user.is_active:
         raise HTTPException(401, "E-mail ou senha inválidos")
+    if user.mfa_enabled:
+        verify_mfa(db, user, payload.otp)
     return _start_session(request, response, db, user)
 
 

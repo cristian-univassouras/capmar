@@ -10,10 +10,10 @@ export default function Web3Grid() {
             <h3 className="text-3xl lg:text-4xl font-medium leading-tight z-10 w-4/5">
               Conecte-se a dapps de cripto
             </h3>
-            {/* Connect Wallet Mockup */}
+            {/* Ilustração de projetos */}
             <div className="bg-white rounded-full p-4 w-4/5 shadow-xl relative z-10 self-center mt-auto flex items-center justify-center gap-4 border-b-8 border-purple-800">
               <div className="w-8 h-8 bg-purple-100 rounded-full flex items-center justify-center text-purple-600 text-xs">🌐</div>
-              <span className="text-black font-bold text-sm">CONECTAR CARTEIRA</span>
+              <span className="text-black font-bold text-sm">CONHECER PROJETOS</span>
             </div>
           </div>
 

@@ -96,8 +96,8 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
 
       {/* Main */}
       <div className="flex-1 min-w-0 md:ml-64 flex flex-col min-h-screen">
-        <header className="sticky top-0 z-30 bg-white/80 backdrop-blur border-b border-gray-100 h-14 flex items-center px-4 md:px-6 gap-4">
-          <form action="/home" method="get" role="search" className="flex-1 min-w-0 max-w-md">
+        <header className="sticky top-0 z-30 bg-white/80 backdrop-blur border-b border-gray-100 min-h-14 flex flex-wrap items-center px-4 py-2 md:px-6 gap-3">
+          <form action="/home" method="get" role="search" className="flex-1 basis-full min-w-0 sm:basis-auto sm:max-w-md">
             <div className="flex items-center gap-2 bg-gray-100 rounded-xl px-3 py-2">
               <svg className="w-4 h-4 text-gray-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>
               <input className="bg-transparent text-sm text-gray-600 placeholder-gray-400 outline-none w-full" name="q" aria-label="Buscar projetos" maxLength={100} placeholder="Buscar projetos..." />
@@ -105,7 +105,9 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
             </div>
           </form>
           <button onClick={handleLogout} className="rounded-lg px-2 py-2 text-sm text-primary md:hidden">Sair</button>
-          <Link href="/perfil"><Avatar user={user} className="w-8 h-8 text-sm" /></Link>
+          <Link href="/chat" className="text-xs font-semibold text-primary">Chat</Link>
+          <Link href="/seguranca" className="text-xs font-semibold text-primary">Segurança</Link>
+          {user?.role === "admin" && <Link href="/admin" className="text-xs font-semibold text-primary">Admin</Link>}
         </header>
 
         <main className="flex-1 min-w-0 p-4 pb-24 md:p-6">{children}</main>

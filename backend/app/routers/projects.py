@@ -66,6 +66,7 @@ def create_project(
 ):
     if payload.category_id is not None and crud.get_category(db, payload.category_id) is None:
         raise HTTPException(status_code=400, detail="Categoria não encontrada")
+    _validate_authorship(payload)
     project = crud.create_project(db, payload, owner_id=user.user_id)
     bind_media(db, user, "project", project.project_id, [project.cover_url, project.logo_url])
     return _annotate(project, user, db)
@@ -96,6 +97,7 @@ def update_project(
     _require_owner(project, user)
     if payload.category_id is not None and crud.get_category(db, payload.category_id) is None:
         raise HTTPException(status_code=400, detail="Categoria não encontrada")
+    _validate_authorship(payload, project)
     project = crud.update_project(db, project, payload)
     bind_media(db, user, "project", project.project_id, [project.cover_url, project.logo_url])
     return _annotate(project, user, db)
@@ -187,3 +189,11 @@ def delete_comment(
     if comment.user_id != user.user_id and not is_owner:
         raise HTTPException(status_code=403, detail="Sem permissão para excluir este comentário")
     crud.delete_comment(db, comment)
+
+
+def _validate_authorship(payload, project=None):
+    values = payload.model_dump(exclude_unset=True)
+    kind = values.get("authorship", project.authorship if project else "individual")
+    responsible = values.get("responsible_names", project.responsible_names if project else None)
+    if kind is None or kind == "group" and not (responsible and responsible.strip()):
+        raise HTTPException(422, "Projetos em grupo exigem a identificação dos responsáveis")

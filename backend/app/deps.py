@@ -22,7 +22,7 @@ def session_from_request(request: Request, db: Session) -> models.AuthSession | 
             return None
         if not isinstance(payload["sub"], str) or not payload["sub"].isdigit() or len(payload["sub"]) > 10:
             return None
-        session = db.get(models.AuthSession, payload["jti"])
+        session = db.get(models.AuthSession, payload["jti"], populate_existing=True)
         if session and session.user_id == int(payload["sub"]) and session.expires_at > int(time.time()):
             return session
     except (jwt.PyJWTError, KeyError, ValueError, TypeError):
@@ -32,7 +32,8 @@ def session_from_request(request: Request, db: Session) -> models.AuthSession | 
 
 def get_current_user_optional(request: Request, db: Session = Depends(get_db, scope="function")) -> models.User | None:
     session = session_from_request(request, db)
-    return db.get(models.User, session.user_id) if session else None
+    user = db.get(models.User, session.user_id) if session else None
+    return user if user and user.is_active else None
 
 
 def get_current_user(request: Request, user: models.User | None = Depends(get_current_user_optional)) -> models.User:

@@ -33,6 +33,10 @@ export default function ProjectForm({ project, categories, onSave, onCancel }: {
         category_id: form.get("category_id") ? Number(form.get("category_id")) : null,
         status: String(form.get("status")), visibility: form.get("visibility") === "on",
         cover_url: cover, logo_url: logo, keywords,
+        authorship: String(form.get("authorship")) as "individual" | "group",
+        responsible_names: String(form.get("responsible_names")).trim() || null,
+        funding_url: String(form.get("funding_url")).trim() || null,
+        funding_description: String(form.get("funding_description")).trim() || null,
       });
     } catch (err) { setError(err instanceof Error ? err.message : "Não foi possível salvar o projeto."); }
     finally { setSaving(false); }
@@ -49,6 +53,10 @@ export default function ProjectForm({ project, categories, onSave, onCancel }: {
         <label className="block font-semibold">Categoria<select className={inputClass} name="category_id" defaultValue={project?.category_id ?? ""}><option value="">Sem categoria</option>{categories.map((c) => <option key={c.id} value={c.id}>{c.description}</option>)}</select></label>
         <label className="block font-semibold">Status<select className={inputClass} name="status" defaultValue={project?.status ?? "rascunho"}>{["rascunho", "ativo", "pausado", "concluido"].map((status) => <option key={status} value={status}>{status}</option>)}</select></label>
       </div>
+      <label className="block font-semibold">Autoria<select name="authorship" defaultValue={project?.authorship ?? "individual"} className={inputClass}><option value="individual">Individual</option><option value="group">Em grupo</option></select></label>
+      <label className="block font-semibold">Responsáveis<input name="responsible_names" defaultValue={project?.responsible_names ?? ""} maxLength={500} className={inputClass} placeholder="Nomes dos responsáveis; obrigatório para grupos" /></label>
+      <label className="block font-semibold">Link de apoio financeiro<input name="funding_url" type="url" defaultValue={project?.funding_url ?? ""} maxLength={2048} pattern="https://.*" placeholder="https://" className={inputClass} /></label>
+      <label className="block font-semibold">Descrição do apoio<input name="funding_description" defaultValue={project?.funding_description ?? ""} maxLength={300} className={inputClass} placeholder="Como o apoio será utilizado" /></label>
       <label className="block font-semibold">Palavras-chave<input className={inputClass} value={tags} onChange={(event) => setTags(event.target.value)} placeholder="Ex.: artesanato, Maricá, educação" aria-describedby="tags-help" maxLength={300} /></label>
       <p id="tags-help" className="text-sm text-gray-600">Separe por vírgula. Até 8 tags, com no máximo 20 caracteres cada. Deixe vazio para remover todas.</p>
       <label className="flex items-center gap-3"><input type="checkbox" name="visibility" className="h-5 w-5 accent-primary" defaultChecked={project?.visibility ?? true} />Projeto visível publicamente</label>

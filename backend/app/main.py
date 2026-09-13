@@ -9,14 +9,14 @@ from .config import settings
 from .database import engine
 from .middleware import RequestProtection
 from .limits import consume, client_ip
-from .routers import auth, categories, posts, projects, teams, uploads, users
+from .routers import admin, account_security, chat, auth, categories, posts, projects, teams, uploads, users
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     # DDL e seeds pertencem ao comando de migração, nunca ao usuário da aplicação.
     with engine.connect() as conn:
-        if conn.scalar(text("SELECT version_num FROM alembic_version")) != "0003_vitrine":
+        if conn.scalar(text("SELECT version_num FROM alembic_version")) != "0004_engagement":
             raise RuntimeError("Banco desatualizado: execute alembic upgrade head com a credencial de migração")
     yield
 
@@ -41,7 +41,7 @@ app.add_middleware(CORSMiddleware, allow_origins=settings.cors_origins_list,
                    allow_methods=["GET", "POST", "PATCH", "DELETE", "OPTIONS"],
                    allow_headers=["Content-Type", "X-CSRF-Protection"])
 
-for router in (auth.router, categories.router, projects.router, teams.router,
+for router in (admin.router, account_security.router, chat.router, auth.router, categories.router, projects.router, teams.router,
                users.router, posts.router, uploads.router):
     app.include_router(router)
 

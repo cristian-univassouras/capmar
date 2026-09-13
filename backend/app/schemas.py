@@ -2,6 +2,7 @@ from datetime import date
 from typing import Literal
 from .security import password_bytes
 from .keywords import normalize_keywords
+from .engagement_schemas import validate_funding_url
 
 from pydantic import BaseModel, ConfigDict, EmailStr, Field, field_validator, model_validator
 
@@ -42,6 +43,9 @@ class UserCreate(ValidatedInput):
 
 
 class UserRead(BaseModel):
+    role: Literal["user", "admin"] = "user"
+    is_active: bool = True
+    mfa_enabled: bool = False
     model_config = ConfigDict(from_attributes=True)
 
     user_id: int
@@ -73,6 +77,7 @@ class UserUpdate(ValidatedInput):
 
 
 class LoginRequest(ValidatedInput):
+    otp: str | None = Field(default=None, pattern=r"^\d{6}$")
     email: EmailStr = Field(max_length=50)
     password: str = Field(min_length=1, max_length=72)
 
@@ -112,6 +117,12 @@ class CategoryRead(CategoryBase):
 
 
 class ProjectBase(ValidatedInput):
+    authorship: Literal["individual", "group"] = "individual"
+    responsible_names: str | None = Field(default=None, max_length=500)
+    funding_url: str | None = Field(default=None, max_length=2048)
+    funding_description: str | None = Field(default=None, max_length=300)
+    _funding = field_validator("funding_url")(validate_funding_url)
+
     name: str = Field(..., min_length=1, max_length=100)
     description: str | None = Field(default=None, max_length=10000)
     template: str | None = Field(default=None, max_length=100)
@@ -135,6 +146,12 @@ class ProjectCreate(ProjectBase):
 
 
 class ProjectUpdate(ValidatedInput):
+    authorship: Literal["individual", "group"] | None = None
+    responsible_names: str | None = Field(default=None, max_length=500)
+    funding_url: str | None = Field(default=None, max_length=2048)
+    funding_description: str | None = Field(default=None, max_length=300)
+    _funding = field_validator("funding_url")(validate_funding_url)
+
     """Todos os campos opcionais — atualização parcial (PATCH)."""
 
     name: str | None = Field(default=None, min_length=1, max_length=100)
