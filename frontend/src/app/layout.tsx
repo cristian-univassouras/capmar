@@ -15,7 +15,7 @@ const outfit = Outfit({
 
 export const metadata: Metadata = {
   title: "Capmar",
-  description: "A sua casa on-chain e solução completa de carteira",
+  description: "Conheça projetos, criadores e iniciativas da comunidade de Maricá.",
 };
 
 export default function RootLayout({

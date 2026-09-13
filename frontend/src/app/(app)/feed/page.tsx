@@ -28,6 +28,8 @@ export default function FeedPage() {
   const [projectId, setProjectId] = useState("");
   const [imageUrl, setImageUrl] = useState<string | null>(null);
   const [posting, setPosting] = useState(false);
+  const [uploading, setUploading] = useState(false);
+  const [deleting, setDeleting] = useState<number | null>(null);
 
   useEffect(() => {
     Promise.all([listPosts(), listProjects()])
@@ -42,7 +44,8 @@ export default function FeedPage() {
 
   async function handlePublish(e: React.FormEvent) {
     e.preventDefault();
-    if (!me || !content.trim()) return;
+    if (!me || !content.trim() || posting || uploading) return;
+    setError(null);
     setPosting(true);
     try {
       const created = await createPost({
@@ -62,12 +65,16 @@ export default function FeedPage() {
   }
 
   async function handleDelete(id: number) {
-    const prev = posts;
-    setPosts((p) => p.filter((post) => post.post_id !== id));
+    if (deleting !== null) return;
+    setDeleting(id);
+    setError(null);
     try {
       await deletePost(id);
-    } catch {
-      setPosts(prev);
+      setPosts((p) => p.filter((post) => post.post_id !== id));
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Erro ao excluir publicação.");
+    } finally {
+      setDeleting(null);
     }
   }
 
@@ -76,11 +83,13 @@ export default function FeedPage() {
       {/* Criar publicação */}
       <form onSubmit={handlePublish} className="bg-white rounded-2xl border border-gray-100 p-4 flex gap-3">
         <Avatar user={me} className="w-9 h-9 text-sm" />
-        <div className="flex-1">
+        <div className="min-w-0 flex-1">
           <textarea
             value={content}
             onChange={(e) => setContent(e.target.value)}
             rows={2}
+            maxLength={10000}
+            aria-label="Texto da publicação"
             placeholder="Compartilhe uma atualização do seu projeto..."
             className="w-full bg-gray-50 rounded-xl px-4 py-3 text-sm text-gray-700 placeholder-gray-400 outline-none focus:ring-2 focus:ring-primary/20 resize-none"
           />
@@ -99,15 +108,16 @@ export default function FeedPage() {
             </div>
           ) : (
             <div className="mt-3">
-              <ImagePicker value={null} onChange={setImageUrl} hint="Adicione uma foto (opcional)" />
+              <ImagePicker value={null} onChange={setImageUrl} onBusyChange={setUploading} hint="Adicione uma foto (opcional)" />
             </div>
           )}
 
-          <div className="flex items-center gap-2 mt-3">
+          <div className="flex flex-wrap items-center gap-2 mt-3">
             <select
               value={projectId}
               onChange={(e) => setProjectId(e.target.value)}
-              className="text-xs font-medium text-gray-500 bg-gray-50 border border-gray-100 rounded-xl px-3 py-1.5 outline-none focus:ring-2 focus:ring-primary/20"
+              aria-label="Projeto da publicação"
+              className="min-w-0 max-w-full text-xs font-medium text-gray-500 bg-gray-50 border border-gray-100 rounded-xl px-3 py-1.5 outline-none focus:ring-2 focus:ring-primary/20"
             >
               <option value="">Sem projeto vinculado</option>
               {projects.map((p) => (
@@ -118,22 +128,21 @@ export default function FeedPage() {
             </select>
             <button
               type="submit"
-              disabled={posting || !content.trim()}
+              disabled={posting || uploading || !content.trim()}
               className="ml-auto bg-primary text-white text-xs font-semibold px-4 py-1.5 rounded-xl hover:bg-primary/90 transition-colors disabled:opacity-50"
             >
-              {posting ? "Publicando..." : "Publicar"}
+              {posting ? "Publicando..." : uploading ? "Enviando imagem..." : "Publicar"}
             </button>
           </div>
         </div>
       </form>
 
+      {error && <div role="alert" className="rounded-xl bg-red-50 p-4 text-red-700">{error}</div>}
       {/* Lista */}
       {loading ? (
         <div className="flex justify-center py-16">
           <span className="h-8 w-8 animate-spin rounded-full border-2 border-primary/30 border-t-primary" />
         </div>
-      ) : error ? (
-        <div className="bg-white rounded-2xl border border-gray-100 p-10 text-center text-accent">{error}</div>
       ) : posts.length === 0 ? (
         <div className="bg-white rounded-2xl border border-gray-100 p-12 text-center text-gray-500">
           Nenhuma publicação ainda. Seja o primeiro a publicar!
@@ -154,14 +163,16 @@ export default function FeedPage() {
                 <button
                   onClick={() => handleDelete(post.post_id)}
                   title="Excluir"
-                  className="text-gray-300 hover:text-accent transition-colors p-1"
+                  aria-label="Excluir publicação"
+                  disabled={deleting !== null}
+                  className="text-gray-500 hover:text-accent transition-colors p-3 disabled:opacity-50"
                 >
                   <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
                 </button>
               )}
             </div>
 
-            <p className="text-sm text-gray-700 leading-relaxed whitespace-pre-wrap">{post.content}</p>
+            <p className="break-words text-sm text-gray-700 leading-relaxed whitespace-pre-wrap">{post.content}</p>
 
             {post.image_url && (
               <div className="rounded-xl overflow-hidden border border-gray-100">

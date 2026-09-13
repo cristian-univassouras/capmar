@@ -25,7 +25,9 @@ export default function LoginPage() {
         password: String(form.get("password")),
       });
       saveSession(auth);
-      router.push("/feed");
+      const next = new URLSearchParams(window.location.search).get("next");
+      const safeNext = next && /^\/(projeto\/\d+|projetos|feed|perfil|equipes|equipe\/\d+)$/.test(next) ? next : "/feed";
+      router.push(safeNext);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Erro ao entrar.");
       setLoading(false);

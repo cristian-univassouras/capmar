@@ -16,7 +16,7 @@ export default function AuthGuard({ children }: { children: React.ReactNode }) {
     function expired() {
       clearStoredUser();
       setAuthed(false);
-      router.replace("/login");
+      router.replace("/login?next=" + encodeURIComponent(pathname));
     }
     async function check() {
       try {

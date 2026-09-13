@@ -1,6 +1,7 @@
 from datetime import date
 from typing import Literal
 from .security import password_bytes
+from .keywords import normalize_keywords
 
 from pydantic import BaseModel, ConfigDict, EmailStr, Field, field_validator, model_validator
 
@@ -121,8 +122,16 @@ class ProjectBase(ValidatedInput):
     logo_url: str | None = Field(default=None, max_length=255)
 
 
+class KeywordRead(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+    keyword_id: int
+    word: str
+
+
 class ProjectCreate(ProjectBase):
-    pass
+    keywords: list[str] = Field(default_factory=list, max_length=8)
+
+    _normalize_keywords = field_validator("keywords")(normalize_keywords)
 
 
 class ProjectUpdate(ValidatedInput):
@@ -136,6 +145,10 @@ class ProjectUpdate(ValidatedInput):
     category_id: int | None = None
     cover_url: str | None = Field(default=None, max_length=255)
     logo_url: str | None = Field(default=None, max_length=255)
+    # Ausente mantém os vínculos; [] remove todos; null é inválido.
+    keywords: list[str] = Field(default_factory=list, max_length=8)
+
+    _normalize_keywords = field_validator("keywords")(normalize_keywords)
 
 
 class ProjectRead(ProjectBase):
@@ -149,6 +162,14 @@ class ProjectRead(ProjectBase):
     likes_count: int = 0
     comments_count: int = 0
     liked_by_me: bool = False
+    keywords: list[KeywordRead] = Field(default_factory=list)
+
+
+class ProjectPage(BaseModel):
+    items: list[ProjectRead]
+    total: int
+    skip: int
+    limit: int
 
 
 # --- Team ---

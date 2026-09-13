@@ -95,26 +95,24 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
       </aside>
 
       {/* Main */}
-      <div className="flex-1 md:ml-64 flex flex-col min-h-screen">
+      <div className="flex-1 min-w-0 md:ml-64 flex flex-col min-h-screen">
         <header className="sticky top-0 z-30 bg-white/80 backdrop-blur border-b border-gray-100 h-14 flex items-center px-4 md:px-6 gap-4">
-          <div className="flex-1 max-w-md">
+          <form action="/home" method="get" role="search" className="flex-1 min-w-0 max-w-md">
             <div className="flex items-center gap-2 bg-gray-100 rounded-xl px-3 py-2">
               <svg className="w-4 h-4 text-gray-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>
-              <input className="bg-transparent text-sm text-gray-600 placeholder-gray-400 outline-none w-full" placeholder="Buscar projetos, pessoas, equipes..." />
+              <input className="bg-transparent text-sm text-gray-600 placeholder-gray-400 outline-none w-full" name="q" aria-label="Buscar projetos" maxLength={100} placeholder="Buscar projetos..." />
+              <button type="submit" className="text-sm font-semibold text-primary">Buscar</button>
             </div>
-          </div>
-          <button className="relative p-2 text-gray-500 hover:text-primary hover:bg-primary/5 rounded-xl transition-colors">
-            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" /></svg>
-            <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-accent rounded-full" />
-          </button>
+          </form>
+          <button onClick={handleLogout} className="rounded-lg px-2 py-2 text-sm text-primary md:hidden">Sair</button>
           <Link href="/perfil"><Avatar user={user} className="w-8 h-8 text-sm" /></Link>
         </header>
 
-        <main className="flex-1 p-4 md:p-6">{children}</main>
+        <main className="flex-1 min-w-0 p-4 pb-24 md:p-6">{children}</main>
       </div>
 
       {/* Bottom nav — mobile */}
-      <nav className="md:hidden fixed bottom-0 inset-x-0 z-40 bg-white border-t border-gray-100 flex">
+      <nav className="md:hidden fixed bottom-0 inset-x-0 z-40 bg-white border-t border-gray-100 flex pb-[env(safe-area-inset-bottom)]">
         {navItems.map((item) => (
           <Link
             key={item.href}

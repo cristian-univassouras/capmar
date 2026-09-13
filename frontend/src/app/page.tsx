@@ -10,7 +10,7 @@ import InteractiveGrid from "@/app/_landing/components/InteractiveGrid";
 
 export default function Home() {
   return (
-    <main className="min-h-screen w-full">
+    <main className="min-h-screen w-full overflow-x-clip">
       <Navbar />
       <Hero />
       <PhoneSection>

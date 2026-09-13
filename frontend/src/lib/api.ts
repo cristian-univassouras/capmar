@@ -120,16 +120,18 @@ export type Project = {
   likes_count: number;
   comments_count: number;
   liked_by_me: boolean;
+  keywords: { keyword_id: number; word: string }[];
 };
 
 export type ProjectPayload = {
   name: string;
-  description?: string;
+  description?: string | null;
   status?: string;
   visibility?: boolean;
   category_id?: number | null;
   cover_url?: string | null;
   logo_url?: string | null;
+  keywords?: string[];
 };
 
 /** Prefixa o host da API em caminhos de imagem salvos como /uploads/xxx. */
@@ -176,7 +178,7 @@ async function getJson<T>(path: string): Promise<T> {
     if (error instanceof ApiError) throw error;
     throw new Error("Não foi possível conectar ao servidor. Tente novamente.");
   }
-  if (!res.ok) throw new Error("Não foi possível carregar os dados.");
+  if (!res.ok) throw await responseError(res, "Não foi possível carregar os dados.");
   return res.json() as Promise<T>;
 }
 
@@ -188,12 +190,12 @@ async function deleteRequest(path: string): Promise<void> {
     if (error instanceof ApiError) throw error;
     throw new Error("Não foi possível conectar ao servidor. Tente novamente.");
   }
-  if (!res.ok) throw new Error("Não foi possível excluir.");
+  if (!res.ok) throw await responseError(res, "Não foi possível excluir.");
 }
 
 async function deleteJson<T>(path: string): Promise<T> {
   const res = await apiFetch(`${API_URL}${path}`, { method: "DELETE", headers: { "X-CSRF-Protection": "1" }, credentials: "include" });
-  if (!res.ok) throw new Error("Não foi possível concluir a ação.");
+  if (!res.ok) throw await responseError(res, "Não foi possível concluir a ação.");
   return res.json() as Promise<T>;
 }
 
@@ -225,6 +227,31 @@ async function patchJson<T>(path: string, body: unknown): Promise<T> {
 
 export function listProjects() {
   return getJson<Project[]>("/projects");
+}
+
+async function responseError(response: Response, fallback: string) {
+  const body = await response.json().catch(() => null);
+  const detail = typeof body?.detail === "string" ? body.detail : body?.detail?.[0]?.msg;
+  return new ApiError(detail || fallback, response.status);
+}
+
+export type ProjectPage = { items: Project[]; total: number; skip: number; limit: number };
+export type ProjectSearch = { q?: string; category_id?: number; skip?: number; limit?: number; public_only?: boolean; owner_id?: number };
+
+export function searchProjects(filters: ProjectSearch = {}) {
+  const query = new URLSearchParams();
+  for (const [key, value] of Object.entries(filters)) {
+    if (value !== undefined && value !== "") query.set(key, String(value));
+  }
+  return getJson<ProjectPage>("/projects/search?" + query);
+}
+
+export async function getOptionalMe() {
+  try { return await getMe(); }
+  catch (error) {
+    if (error instanceof ApiError && error.status === 401) return null;
+    throw error;
+  }
 }
 
 export function getProject(id: number) {
@@ -267,8 +294,8 @@ export function unlikeProject(id: number) {
   return deleteJson<LikeStatus>(`/projects/${id}/like`);
 }
 
-export function listComments(projectId: number) {
-  return getJson<Comment[]>(`/projects/${projectId}/comments`);
+export function listComments(projectId: number, skip = 0) {
+  return getJson<Comment[]>(`/projects/${projectId}/comments?skip=${skip}&limit=100`);
 }
 
 export function createComment(projectId: number, content: string) {

@@ -38,10 +38,12 @@ type ImagePickerProps = {
   onChange: (url: string | null) => void;
   variant?: "cover" | "square";
   hint?: string;
+  label?: string;
+  onBusyChange?: (busy: boolean) => void;
 };
 
 /** Botão de upload de imagem com preview. Sobe o arquivo e devolve o caminho /uploads/... */
-export function ImagePicker({ value, onChange, variant = "cover", hint }: ImagePickerProps) {
+export function ImagePicker({ value, onChange, variant = "cover", hint, label = "Imagem", onBusyChange }: ImagePickerProps) {
   const inputRef = useRef<HTMLInputElement>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -50,7 +52,9 @@ export function ImagePicker({ value, onChange, variant = "cover", hint }: ImageP
   async function handleFile(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
     if (!file) return;
+    if (file.size > 5 * 1024 * 1024) { setError("A imagem deve ter no máximo 5 MB."); return; }
     setBusy(true);
+    onBusyChange?.(true);
     setError(null);
     try {
       onChange(await uploadImage(file));
@@ -58,6 +62,7 @@ export function ImagePicker({ value, onChange, variant = "cover", hint }: ImageP
       setError(err instanceof Error ? err.message : "Erro ao enviar.");
     } finally {
       setBusy(false);
+      onBusyChange?.(false);
       if (inputRef.current) inputRef.current.value = "";
     }
   }
@@ -70,13 +75,14 @@ export function ImagePicker({ value, onChange, variant = "cover", hint }: ImageP
         type="button"
         onClick={() => inputRef.current?.click()}
         disabled={busy}
+        aria-label={label + (value ? ": trocar imagem" : ": enviar imagem")}
         className={`group relative ${box} overflow-hidden border-2 border-dashed border-gray-200 bg-gray-50 flex items-center justify-center text-gray-400 hover:border-primary/40 hover:text-primary transition-colors`}
       >
         {src ? (
           <>
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img src={src} alt="" className="w-full h-full object-cover" />
-            <span className="absolute inset-0 bg-black/30 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center text-white text-xs font-semibold">
+            <span className="absolute inset-x-0 bottom-0 bg-black/60 p-2 flex items-center justify-center text-white text-xs font-semibold">
               {busy ? "Enviando..." : "Trocar"}
             </span>
           </>
@@ -89,6 +95,8 @@ export function ImagePicker({ value, onChange, variant = "cover", hint }: ImageP
         {value && (
           <button
             type="button"
+            disabled={busy}
+            aria-label={"Remover " + label.toLowerCase()}
             onClick={() => onChange(null)}
             className="text-xs text-gray-400 hover:text-accent"
           >
@@ -96,8 +104,9 @@ export function ImagePicker({ value, onChange, variant = "cover", hint }: ImageP
           </button>
         )}
       </div>
-      {error && <p className="text-xs text-accent mt-1">{error}</p>}
-      <input ref={inputRef} type="file" accept="image/*" onChange={handleFile} className="hidden" />
+      <p className="mt-2 text-xs text-gray-600">JPEG, PNG, WebP ou GIF estático. Máximo de 5 MB.</p>
+      {error && <p role="alert" className="text-xs text-accent mt-1">{error}</p>}
+      <input aria-label={label} ref={inputRef} type="file" accept="image/jpeg,image/png,image/webp,image/gif" onChange={handleFile} className="hidden" />
     </div>
   );
 }

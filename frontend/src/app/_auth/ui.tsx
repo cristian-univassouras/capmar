@@ -47,6 +47,7 @@ export function SubmitButton({ children, loadingLabel, loading }: SubmitButtonPr
   return (
     <button
       type="submit"
+      aria-label={children}
       className="group relative w-full overflow-hidden rounded-full border border-primary bg-primary px-8 py-4 text-base font-bold transition-all duration-700 hover:bg-white"
     >
       <span className="relative flex items-center justify-center">

@@ -14,7 +14,7 @@ export default function Hero() {
         </h1>
         
         <Link
-          href="/start"
+          href="/register"
           className="group relative overflow-hidden bg-black border border-black px-4 py-2 rounded-full text-lg font-bold transition-all duration-300 hover:bg-white hover:scale-105 pointer-events-auto"
         >
           <div className="relative flex items-center justify-center">

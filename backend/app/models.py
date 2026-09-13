@@ -75,8 +75,8 @@ class Project(Base):
     status = Column(String(15), nullable=False, default="rascunho")
     visibility = Column(Boolean, nullable=False, default=True)
     created_at = Column(Date, nullable=False, server_default=func.current_date())
-    category_id = Column(Integer, ForeignKey("category.id", ondelete="SET NULL"), nullable=True)
-    owner_id = Column(Integer, ForeignKey("users.user_id", ondelete="SET NULL"), nullable=True)
+    category_id = Column(Integer, ForeignKey("category.id", ondelete="SET NULL"), nullable=True, index=True)
+    owner_id = Column(Integer, ForeignKey("users.user_id", ondelete="SET NULL"), nullable=True, index=True)
     cover_url = Column(String(255), nullable=True)
     logo_url = Column(String(255), nullable=True)
 
@@ -84,7 +84,7 @@ class Project(Base):
     owner = relationship("User", foreign_keys=[owner_id])
     teams = relationship("Team", back_populates="project", cascade="all, delete-orphan", passive_deletes=True)
     members = relationship("User", secondary=project_users, back_populates="projects")
-    keywords = relationship("Keyword", secondary=projects_keywords)
+    keywords = relationship("Keyword", secondary=projects_keywords, order_by="Keyword.word")
     likes = relationship("ProjectLike", cascade="all, delete-orphan", passive_deletes=True)
     comments = relationship("ProjectComment", cascade="all, delete-orphan", passive_deletes=True)
 
@@ -125,6 +125,7 @@ class User(Base):
 
 class Keyword(Base):
     __tablename__ = "keywords"
+    __table_args__ = (CheckConstraint("length(trim(word)) BETWEEN 1 AND 20", name="keyword_word_length"),)
 
     keyword_id = Column(Integer, primary_key=True)
     word = Column(String(20), unique=True, nullable=False)

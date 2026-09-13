@@ -5,6 +5,7 @@ from sqlalchemy.orm import Session, selectinload
 
 from . import models, schemas
 from .security import hash_password
+from .keywords import set_project_keywords
 
 
 # --- User / Auth ---
@@ -73,14 +74,41 @@ def create_category(db: Session, data: schemas.CategoryCreate) -> models.Categor
 _PROJECT_LOADS = (
     selectinload(models.Project.category),
     selectinload(models.Project.owner),
+    selectinload(models.Project.keywords),
 )
 
 
-def list_projects(db: Session, skip: int = 0, limit: int = 100, user=None) -> list[models.Project]:
+def project_filters(user=None, q="", category_id=None, public_only=False, owner_id=None):
+    conditions = [project_access(user)]
+    if public_only:
+        conditions.append(models.Project.visibility.is_(True))
+    if category_id is not None:
+        conditions.append(models.Project.category_id == category_id)
+    if owner_id is not None:
+        conditions.append(models.Project.owner_id == owner_id)
+    term = q.strip()
+    if term:
+        # Literal substring: caracteres de LIKE não ampliam arbitrariamente a busca.
+        escaped = term.replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_")
+        pattern = func.public.unaccent(f"%{escaped}%")
+        conditions.append(or_(
+            func.public.unaccent(models.Project.name).ilike(pattern, escape="\\"),
+            func.public.unaccent(models.Project.description).ilike(pattern, escape="\\"),
+            models.Project.keywords.any(func.public.unaccent(models.Keyword.word).ilike(pattern, escape="\\")),
+        ))
+    return conditions
+
+
+def count_projects(db, **filters):
+    return db.scalar(select(func.count()).select_from(models.Project).where(*project_filters(**filters)))
+
+
+def list_projects(db: Session, skip: int = 0, limit: int = 100, user=None,
+                  q="", category_id=None, public_only=False, owner_id=None) -> list[models.Project]:
     stmt = (
         select(models.Project)
         .options(*_PROJECT_LOADS)
-        .where(project_access(user))
+        .where(*project_filters(user, q, category_id, public_only, owner_id))
         .order_by(models.Project.project_id.desc())
         .offset(skip)
         .limit(limit)
@@ -96,9 +124,10 @@ def get_project(db: Session, project_id: int) -> models.Project | None:
 
 
 def create_project(db: Session, data: schemas.ProjectCreate, owner_id: int) -> models.Project:
-    project = models.Project(**data.model_dump(), owner_id=owner_id)
+    project = models.Project(**data.model_dump(exclude={"keywords"}), owner_id=owner_id)
     db.add(project)
     db.flush()
+    set_project_keywords(db, project, data.keywords)
     db.refresh(project)
     return get_project(db, project.project_id)
 
@@ -106,8 +135,12 @@ def create_project(db: Session, data: schemas.ProjectCreate, owner_id: int) -> m
 def update_project(
     db: Session, project: models.Project, data: schemas.ProjectUpdate
 ) -> models.Project:
-    for field, value in data.model_dump(exclude_unset=True).items():
+    db.execute(select(models.Project.project_id).where(
+        models.Project.project_id == project.project_id).with_for_update())
+    for field, value in data.model_dump(exclude_unset=True, exclude={"keywords"}).items():
         setattr(project, field, value)
+    if "keywords" in data.model_fields_set:
+        set_project_keywords(db, project, data.keywords)
     db.flush()
     db.refresh(project)
     return project

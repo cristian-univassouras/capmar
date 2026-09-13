@@ -27,10 +27,35 @@ def _require_owner(project: models.Project, user: models.User) -> None:
 def list_projects(
     skip: int = Query(0, ge=0, le=10000),
     limit: int = Query(100, ge=1, le=100),
+    q: str = Query("", max_length=100),
+    category_id: int | None = Query(None, ge=1),
+    public_only: bool = False,
+    owner_id: int | None = Query(None, ge=1),
     db: Session = Depends(get_db, scope="function"),
     user: models.User | None = Depends(get_current_user_optional),
 ):
-    return [_annotate(p, user, db) for p in crud.list_projects(db, skip=skip, limit=limit, user=user)]
+    _validate_search(q)
+    return [_annotate(p, user, db) for p in crud.list_projects(
+        db, skip=skip, limit=limit, user=user, q=q, category_id=category_id,
+        public_only=public_only, owner_id=owner_id)]
+
+
+def _validate_search(q):
+    if len(q.strip()) == 1:
+        raise HTTPException(422, "Digite pelo menos 2 caracteres para buscar")
+
+
+@router.get("/search", response_model=schemas.ProjectPage)
+def search_projects(skip: int = Query(0, ge=0, le=10000), limit: int = Query(12, ge=1, le=100),
+                    q: str = Query("", max_length=100), category_id: int | None = Query(None, ge=1),
+                    public_only: bool = False, owner_id: int | None = Query(None, ge=1),
+                    db: Session = Depends(get_db, scope="function"),
+                    user: models.User | None = Depends(get_current_user_optional)):
+    _validate_search(q)
+    filters = dict(user=user, q=q, category_id=category_id, public_only=public_only, owner_id=owner_id)
+    return schemas.ProjectPage(
+        items=[_annotate(p, user, db) for p in crud.list_projects(db, skip=skip, limit=limit, **filters)],
+        total=crud.count_projects(db, **filters), skip=skip, limit=limit)
 
 
 @router.post("", response_model=schemas.ProjectRead, status_code=status.HTTP_201_CREATED)
