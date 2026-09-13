@@ -2,7 +2,7 @@
 
 import { usePathname, useRouter } from "next/navigation";
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 
 import { clearSession, getStoredUser, type User } from "@/lib/api";
 import { Avatar } from "@/app/_components/media";
@@ -28,15 +28,15 @@ const navItems = [
 export default function AppShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const router = useRouter();
-  const [user, setUser] = useState<User | null>(null);
+  const [user] = useState<User | null>(getStoredUser);
 
-  useEffect(() => {
-    setUser(getStoredUser());
-  }, []);
-
-  function handleLogout() {
-    clearSession();
-    router.replace("/login");
+  async function handleLogout() {
+    try {
+      await clearSession();
+      router.replace("/login");
+    } catch {
+      window.alert("Não foi possível encerrar a sessão. Verifique a conexão e tente novamente.");
+    }
   }
 
   const displayName =

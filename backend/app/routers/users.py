@@ -1,20 +1,22 @@
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.orm import Session
 
 from .. import crud, models, schemas
 from ..database import get_db
 from ..deps import get_current_user
+from ..media import bind_media
 
 router = APIRouter(prefix="/users", tags=["users"])
 
 
-@router.get("", response_model=list[schemas.UserRead])
-def list_users(db: Session = Depends(get_db)):
-    return crud.list_users(db)
+@router.get("", response_model=list[schemas.PublicUser])
+def list_users(db: Session = Depends(get_db, scope="function"),
+               skip: int = Query(0, ge=0, le=10000), limit: int = Query(100, ge=1, le=100)):
+    return crud.list_users(db, skip=skip, limit=limit)
 
 
-@router.get("/{user_id}", response_model=schemas.UserRead)
-def get_user(user_id: int, db: Session = Depends(get_db)):
+@router.get("/{user_id}", response_model=schemas.PublicUser)
+def get_user(user_id: int, db: Session = Depends(get_db, scope="function")):
     user = crud.get_user(db, user_id)
     if user is None:
         raise HTTPException(status_code=404, detail="Usuário não encontrado")
@@ -25,7 +27,7 @@ def get_user(user_id: int, db: Session = Depends(get_db)):
 def update_user(
     user_id: int,
     payload: schemas.UserUpdate,
-    db: Session = Depends(get_db),
+    db: Session = Depends(get_db, scope="function"),
     current: models.User = Depends(get_current_user),
 ):
     user = crud.get_user(db, user_id)
@@ -44,4 +46,6 @@ def update_user(
         if existing is not None and existing.user_id != user_id:
             raise HTTPException(status_code=400, detail="Nome de usuário já em uso")
 
-    return crud.update_user(db, user, payload)
+    user = crud.update_user(db, user, payload)
+    bind_media(db, current, "user", user.user_id, [user.avatar_url])
+    return user

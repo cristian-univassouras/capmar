@@ -1,45 +1,44 @@
+import time
+
 import jwt
-from fastapi import Depends, HTTPException, status
-from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
+from fastapi import Depends, HTTPException, Request
 from sqlalchemy.orm import Session
 
-from . import crud, models
+from . import models
 from .config import settings
 from .database import get_db
 from .security import ALGORITHM
 
-bearer_scheme = HTTPBearer(auto_error=False)
 
-
-def _user_from_credentials(
-    creds: HTTPAuthorizationCredentials | None, db: Session
-) -> models.User | None:
-    if creds is None:
+def session_from_request(request: Request, db: Session) -> models.AuthSession | None:
+    # Bearer encerrado: clientes antigos devem autenticar novamente por cookie.
+    token = request.cookies.get(settings.cookie_name)
+    if not token:
         return None
     try:
-        payload = jwt.decode(creds.credentials, settings.secret_key, algorithms=[ALGORITHM])
-        user_id = int(payload["sub"])
-    except (jwt.PyJWTError, KeyError, ValueError):
-        return None
-    return crud.get_user(db, user_id)
+        payload = jwt.decode(token, settings.secret_key, algorithms=[ALGORITHM],
+                             options={"require": ["exp", "iat", "sub", "jti"]})
+        if not isinstance(payload["jti"], str) or len(payload["jti"]) != 64:
+            return None
+        if not isinstance(payload["sub"], str) or not payload["sub"].isdigit() or len(payload["sub"]) > 10:
+            return None
+        session = db.get(models.AuthSession, payload["jti"])
+        if session and session.user_id == int(payload["sub"]) and session.expires_at > int(time.time()):
+            return session
+    except (jwt.PyJWTError, KeyError, ValueError, TypeError):
+        pass
+    return None
 
 
-def get_current_user(
-    creds: HTTPAuthorizationCredentials | None = Depends(bearer_scheme),
-    db: Session = Depends(get_db),
-) -> models.User:
-    user = _user_from_credentials(creds, db)
+def get_current_user_optional(request: Request, db: Session = Depends(get_db, scope="function")) -> models.User | None:
+    session = session_from_request(request, db)
+    return db.get(models.User, session.user_id) if session else None
+
+
+def get_current_user(request: Request, user: models.User | None = Depends(get_current_user_optional)) -> models.User:
     if user is None:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Não autenticado",
-            headers={"WWW-Authenticate": "Bearer"},
-        )
+        raise HTTPException(status_code=401, detail="Sessão inválida ou expirada")
+    if request.method not in ("GET", "HEAD", "OPTIONS") and not request.url.path.startswith("/auth/"):
+        from .limits import consume
+        consume(f"write-user:{user.user_id}", settings.write_limit, 60)
     return user
-
-
-def get_current_user_optional(
-    creds: HTTPAuthorizationCredentials | None = Depends(bearer_scheme),
-    db: Session = Depends(get_db),
-) -> models.User | None:
-    return _user_from_credentials(creds, db)

@@ -19,14 +19,12 @@ export type Author = {
   avatar_url: string | null;
 };
 
-function authHeader(): Record<string, string> {
-  const token = getToken();
-  return token ? { Authorization: `Bearer ${token}` } : {};
-}
+// O JWT viaja num cookie HttpOnly emitido pelo backend (US-026) — o JS não lê
+// nem envia o token à mão. Por isso todo fetch daqui usa `credentials: "include"`,
+// que manda o cookie mesmo em requisições cross-origin (o CORS do backend está
+// com `allow_credentials=True` e origens explícitas).
 
 export type AuthResponse = {
-  access_token: string;
-  token_type: string;
   user: User;
 };
 
@@ -43,15 +41,32 @@ export type LoginPayload = {
   password: string;
 };
 
+export class ApiError extends Error {
+  constructor(message: string, public status: number) { super(message); }
+}
+
+async function apiFetch(input: RequestInfo | URL, init?: RequestInit): Promise<Response> {
+  if (typeof window !== "undefined") localStorage.removeItem(LEGACY_TOKEN_KEY);
+  const response = await fetch(input, { ...init, credentials: "include", cache: "no-store" });
+  if (response.status === 401) {
+    clearStoredUser();
+    if (typeof window !== "undefined") window.dispatchEvent(new Event("capmar-session-expired"));
+    throw new ApiError("Sessão inválida ou expirada. Entre novamente.", 401);
+  }
+  return response;
+}
+
 async function postJson<T>(path: string, body: unknown): Promise<T> {
   let res: Response;
   try {
-    res = await fetch(`${API_URL}${path}`, {
+    res = await apiFetch(`${API_URL}${path}`, {
       method: "POST",
-      headers: { "Content-Type": "application/json", ...authHeader() },
+      headers: { "Content-Type": "application/json", "X-CSRF-Protection": "1" },
+      credentials: "include",
       body: JSON.stringify(body),
     });
-  } catch {
+  } catch (error) {
+    if (error instanceof ApiError) throw error;
     throw new Error("Não foi possível conectar ao servidor. Tente novamente.");
   }
 
@@ -129,12 +144,14 @@ export async function uploadImage(file: File): Promise<string> {
   form.append("file", file);
   let res: Response;
   try {
-    res = await fetch(`${API_URL}/upload`, {
+    res = await apiFetch(`${API_URL}/upload`, {
       method: "POST",
-      headers: authHeader(),
+      headers: { "X-CSRF-Protection": "1" },
+      credentials: "include",
       body: form,
     });
-  } catch {
+  } catch (error) {
+    if (error instanceof ApiError) throw error;
     throw new Error("Não foi possível enviar a imagem.");
   }
   if (!res.ok) {
@@ -154,8 +171,9 @@ export async function uploadImage(file: File): Promise<string> {
 async function getJson<T>(path: string): Promise<T> {
   let res: Response;
   try {
-    res = await fetch(`${API_URL}${path}`, { headers: authHeader() });
-  } catch {
+    res = await apiFetch(`${API_URL}${path}`, { credentials: "include" });
+  } catch (error) {
+    if (error instanceof ApiError) throw error;
     throw new Error("Não foi possível conectar ao servidor. Tente novamente.");
   }
   if (!res.ok) throw new Error("Não foi possível carregar os dados.");
@@ -165,15 +183,16 @@ async function getJson<T>(path: string): Promise<T> {
 async function deleteRequest(path: string): Promise<void> {
   let res: Response;
   try {
-    res = await fetch(`${API_URL}${path}`, { method: "DELETE", headers: authHeader() });
-  } catch {
+    res = await apiFetch(`${API_URL}${path}`, { method: "DELETE", headers: { "X-CSRF-Protection": "1" }, credentials: "include" });
+  } catch (error) {
+    if (error instanceof ApiError) throw error;
     throw new Error("Não foi possível conectar ao servidor. Tente novamente.");
   }
   if (!res.ok) throw new Error("Não foi possível excluir.");
 }
 
 async function deleteJson<T>(path: string): Promise<T> {
-  const res = await fetch(`${API_URL}${path}`, { method: "DELETE", headers: authHeader() });
+  const res = await apiFetch(`${API_URL}${path}`, { method: "DELETE", headers: { "X-CSRF-Protection": "1" }, credentials: "include" });
   if (!res.ok) throw new Error("Não foi possível concluir a ação.");
   return res.json() as Promise<T>;
 }
@@ -181,12 +200,14 @@ async function deleteJson<T>(path: string): Promise<T> {
 async function patchJson<T>(path: string, body: unknown): Promise<T> {
   let res: Response;
   try {
-    res = await fetch(`${API_URL}${path}`, {
+    res = await apiFetch(`${API_URL}${path}`, {
       method: "PATCH",
-      headers: { "Content-Type": "application/json", ...authHeader() },
+      headers: { "Content-Type": "application/json", "X-CSRF-Protection": "1" },
+      credentials: "include",
       body: JSON.stringify(body),
     });
-  } catch {
+  } catch (error) {
+    if (error instanceof ApiError) throw error;
     throw new Error("Não foi possível conectar ao servidor. Tente novamente.");
   }
   if (!res.ok) {
@@ -320,11 +341,11 @@ export type UserUpdatePayload = {
 };
 
 export function listUsers() {
-  return getJson<User[]>("/users");
+  return getJson<Author[]>("/users");
 }
 
 export function getUser(id: number) {
-  return getJson<User>(`/users/${id}`);
+  return getJson<Author>(`/users/${id}`);
 }
 
 export function updateUser(id: number, payload: UserUpdatePayload) {
@@ -362,18 +383,26 @@ export function deletePost(id: number) {
   return deleteRequest(`/posts/${id}`);
 }
 
-const TOKEN_KEY = "capmar_token";
+// --- Sessão ---
+//
+// A sessão vive no cookie HttpOnly emitido pelo backend. O `localStorage` só
+// guarda uma cópia dos dados do usuário, para a primeira pintura da tela não
+// esperar a rede — NUNCA como fonte de autorização. Quem decide se a sessão é
+// válida é o servidor, via `getMe()`.
+
 const USER_KEY = "capmar_user";
+/** Chave usada antes do US-026, quando o JWT ficava no localStorage. */
+const LEGACY_TOKEN_KEY = "capmar_token";
+
+/** Sessão do usuário autenticado, confirmada pelo servidor. 401 vira erro. */
+export function getMe() {
+  return getJson<User>("/auth/me");
+}
 
 export function saveSession(auth: AuthResponse) {
   if (typeof window === "undefined") return;
-  localStorage.setItem(TOKEN_KEY, auth.access_token);
+  localStorage.removeItem(LEGACY_TOKEN_KEY);
   localStorage.setItem(USER_KEY, JSON.stringify(auth.user));
-}
-
-export function getToken(): string | null {
-  if (typeof window === "undefined") return null;
-  return localStorage.getItem(TOKEN_KEY);
 }
 
 export function saveUser(user: User) {
@@ -383,6 +412,7 @@ export function saveUser(user: User) {
 
 export function getStoredUser(): User | null {
   if (typeof window === "undefined") return null;
+  localStorage.removeItem(LEGACY_TOKEN_KEY);
   const raw = localStorage.getItem(USER_KEY);
   if (!raw) return null;
   try {
@@ -392,8 +422,18 @@ export function getStoredUser(): User | null {
   }
 }
 
-export function clearSession() {
+/** Descarta o cache local do usuário. Não encerra a sessão no servidor. */
+export function clearStoredUser() {
   if (typeof window === "undefined") return;
-  localStorage.removeItem(TOKEN_KEY);
   localStorage.removeItem(USER_KEY);
+  localStorage.removeItem(LEGACY_TOKEN_KEY);
+}
+
+/**
+ * Encerra a sessão: limpa o cache local e pede ao backend que apague o cookie
+ * (só o servidor consegue, já que o cookie é HttpOnly).
+ */
+export async function clearSession() {
+  await postJson<{ detail: string }>("/auth/logout", {});
+  clearStoredUser();
 }

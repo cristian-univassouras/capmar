@@ -1,0 +1,23 @@
+# Aplicar sobre o compose local. Requer provisionar capmar_app e capmar_migrator.
+services:
+  db:
+    environment:
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Defina a senha administrativa do banco}
+  backend:
+    environment:
+      ENVIRONMENT: production
+      DATABASE_URL: ${APP_DATABASE_URL:?Defina a URL do papel capmar_app com permissões DML}
+      SECRET_KEY: ${SECRET_KEY:?Defina um segredo aleatório com pelo menos 32 bytes}
+      CORS_ORIGINS: ${CORS_ORIGINS:?Defina origens HTTPS explícitas}
+      COOKIE_SECURE: "true"
+      COOKIE_SAMESITE: ${COOKIE_SAMESITE:-lax}
+      FORWARDED_ALLOW_IPS: ${FORWARDED_ALLOW_IPS:?Defina somente IPs dos proxies confiáveis}
+  migrate:
+    environment:
+      DATABASE_URL: ${MIGRATION_DATABASE_URL:?Defina a URL do papel capmar_migrator}
+  frontend:
+    build:
+      args:
+        NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:?Defina a URL HTTPS pública da API}
+    environment:
+      NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:?Defina a URL HTTPS pública da API}

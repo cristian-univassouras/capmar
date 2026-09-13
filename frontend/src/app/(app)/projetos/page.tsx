@@ -23,13 +23,7 @@ const STATUS_STYLES: Record<string, string> = {
   concluido: "bg-primary/10 text-primary",
 };
 
-function formatDate(iso: string) {
-  return new Date(iso).toLocaleDateString("pt-BR", {
-    day: "2-digit",
-    month: "short",
-    year: "numeric",
-  });
-}
+
 
 export default function ProjetosPage() {
   const [me, setMe] = useState<User | null>(null);
@@ -43,9 +37,9 @@ export default function ProjetosPage() {
   const [formError, setFormError] = useState<string | null>(null);
 
   useEffect(() => {
-    setMe(getStoredUser());
     Promise.all([listProjects(), listCategories()])
       .then(([p, c]) => {
+        setMe(getStoredUser());
         setProjects(p);
         setCategories(c);
       })

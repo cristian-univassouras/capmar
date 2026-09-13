@@ -3,8 +3,7 @@
 import { useEffect, useState } from "react";
 
 import {
-  getStoredUser,
-  getUser,
+  getMe,
   listPosts,
   mediaUrl,
   saveUser,
@@ -26,19 +25,14 @@ export default function PerfilPage() {
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
 
   useEffect(() => {
-    const stored = getStoredUser();
-    if (!stored) {
-      setLoading(false);
-      return;
-    }
-    Promise.all([getUser(stored.user_id), listPosts(stored.user_id)])
-      .then(([u, p]) => {
+    getMe().then(async (u) => {
+        const p = await listPosts(u.user_id);
         setUser(u);
         setAvatarUrl(u.avatar_url);
         saveUser(u);
         setPosts(p);
       })
-      .catch(() => setUser(stored))
+      .catch(() => setError("Não foi possível carregar o perfil. Tente novamente."))
       .finally(() => setLoading(false));
   }, []);
 

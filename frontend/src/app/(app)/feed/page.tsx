@@ -30,9 +30,9 @@ export default function FeedPage() {
   const [posting, setPosting] = useState(false);
 
   useEffect(() => {
-    setMe(getStoredUser());
     Promise.all([listPosts(), listProjects()])
       .then(([p, pr]) => {
+        setMe(getStoredUser());
         setPosts(p);
         setProjects(pr);
       })

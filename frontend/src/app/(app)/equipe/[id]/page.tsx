@@ -13,6 +13,7 @@ import {
   removeTeamMember,
   updateTeam,
   type Team,
+  type Author,
   type User,
 } from "@/lib/api";
 import { displayNameOf, formatDate } from "@/lib/format";
@@ -25,7 +26,7 @@ export default function EquipePage() {
 
   const [me, setMe] = useState<User | null>(null);
   const [team, setTeam] = useState<Team | null>(null);
-  const [users, setUsers] = useState<User[]>([]);
+  const [users, setUsers] = useState<Author[]>([]);
   const [loading, setLoading] = useState(true);
   const [notFound, setNotFound] = useState(false);
 
@@ -36,9 +37,9 @@ export default function EquipePage() {
   const [addUserId, setAddUserId] = useState("");
 
   useEffect(() => {
-    setMe(getStoredUser());
     Promise.all([getTeam(teamId), listUsers()])
       .then(([t, u]) => {
+        setMe(getStoredUser());
         setTeam(t);
         setUsers(u);
       })

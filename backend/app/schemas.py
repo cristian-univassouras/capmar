@@ -1,17 +1,43 @@
 from datetime import date
+from typing import Literal
+from .security import password_bytes
 
-from pydantic import BaseModel, ConfigDict, EmailStr, Field
+from pydantic import BaseModel, ConfigDict, EmailStr, Field, field_validator, model_validator
+
+
+
+class ValidatedInput(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    @field_validator("email", check_fields=False)
+    @classmethod
+    def normalize_email(cls, value):
+        return str(value).lower() if value is not None else None
+
+    @model_validator(mode="before")
+    @classmethod
+    def validate_values(cls, values):
+        if isinstance(values, dict):
+            required = {"username", "email", "name", "status", "visibility", "team_name", "content", "password"}
+            if cls.__name__ == "TeamUpdate":
+                required.add("project_id")
+            for key, value in values.items():
+                if key in required and (value is None or isinstance(value, str) and not value.strip()):
+                    raise ValueError(f"{key} não pode ser nulo ou vazio")
+            if "password" in values and isinstance(values["password"], str):
+                password_bytes(values["password"])
+        return values
 
 
 # --- Auth / User ---
 
 
-class UserCreate(BaseModel):
+class UserCreate(ValidatedInput):
     username: str = Field(..., min_length=3, max_length=20)
     first_name: str | None = Field(default=None, max_length=20)
     last_name: str | None = Field(default=None, max_length=100)
-    email: EmailStr
-    password: str = Field(..., min_length=6, max_length=128)
+    email: EmailStr = Field(max_length=50)
+    password: str = Field(..., min_length=6, max_length=72)
 
 
 class UserRead(BaseModel):
@@ -21,7 +47,7 @@ class UserRead(BaseModel):
     username: str
     first_name: str | None = None
     last_name: str | None = None
-    email: EmailStr
+    email: EmailStr = Field(max_length=50)
     avatar_url: str | None = None
 
 
@@ -37,22 +63,20 @@ class PublicUser(BaseModel):
     avatar_url: str | None = None
 
 
-class UserUpdate(BaseModel):
+class UserUpdate(ValidatedInput):
     first_name: str | None = Field(default=None, max_length=20)
     last_name: str | None = Field(default=None, max_length=100)
     username: str | None = Field(default=None, min_length=3, max_length=20)
-    email: EmailStr | None = None
+    email: EmailStr | None = Field(default=None, max_length=50)
     avatar_url: str | None = Field(default=None, max_length=255)
 
 
-class LoginRequest(BaseModel):
-    email: EmailStr
-    password: str
+class LoginRequest(ValidatedInput):
+    email: EmailStr = Field(max_length=50)
+    password: str = Field(min_length=1, max_length=72)
 
 
 class AuthResponse(BaseModel):
-    access_token: str
-    token_type: str = "bearer"
     user: UserRead
 
 
@@ -69,8 +93,8 @@ class ProjectRef(BaseModel):
 # --- Category ---
 
 
-class CategoryBase(BaseModel):
-    description: str = Field(..., min_length=1)
+class CategoryBase(ValidatedInput):
+    description: str = Field(..., min_length=1, max_length=100)
 
 
 class CategoryCreate(CategoryBase):
@@ -86,11 +110,11 @@ class CategoryRead(CategoryBase):
 # --- Project ---
 
 
-class ProjectBase(BaseModel):
+class ProjectBase(ValidatedInput):
     name: str = Field(..., min_length=1, max_length=100)
-    description: str | None = None
+    description: str | None = Field(default=None, max_length=10000)
     template: str | None = Field(default=None, max_length=100)
-    status: str = Field(default="rascunho", max_length=15)
+    status: Literal["rascunho", "ativo", "pausado", "concluido"] = "rascunho"
     visibility: bool = True
     category_id: int | None = None
     cover_url: str | None = Field(default=None, max_length=255)
@@ -101,13 +125,13 @@ class ProjectCreate(ProjectBase):
     pass
 
 
-class ProjectUpdate(BaseModel):
+class ProjectUpdate(ValidatedInput):
     """Todos os campos opcionais — atualização parcial (PATCH)."""
 
     name: str | None = Field(default=None, min_length=1, max_length=100)
-    description: str | None = None
+    description: str | None = Field(default=None, max_length=10000)
     template: str | None = Field(default=None, max_length=100)
-    status: str | None = Field(default=None, max_length=15)
+    status: Literal["rascunho", "ativo", "pausado", "concluido"] | None = None
     visibility: bool | None = None
     category_id: int | None = None
     cover_url: str | None = Field(default=None, max_length=255)
@@ -130,9 +154,9 @@ class ProjectRead(ProjectBase):
 # --- Team ---
 
 
-class TeamBase(BaseModel):
+class TeamBase(ValidatedInput):
     team_name: str = Field(..., min_length=1, max_length=255)
-    purpose: str | None = None
+    purpose: str | None = Field(default=None, max_length=5000)
     project_id: int
 
 
@@ -140,9 +164,9 @@ class TeamCreate(TeamBase):
     pass
 
 
-class TeamUpdate(BaseModel):
+class TeamUpdate(ValidatedInput):
     team_name: str | None = Field(default=None, min_length=1, max_length=255)
-    purpose: str | None = None
+    purpose: str | None = Field(default=None, max_length=5000)
     project_id: int | None = None
 
 
@@ -151,7 +175,7 @@ class TeamRead(BaseModel):
 
     team_id: int
     team_name: str
-    purpose: str | None = None
+    purpose: str | None = Field(default=None, max_length=5000)
     created_at: date
     project_id: int
     leader_id: int | None = None
@@ -160,15 +184,15 @@ class TeamRead(BaseModel):
     members: list[PublicUser] = []
 
 
-class MemberAdd(BaseModel):
+class MemberAdd(ValidatedInput):
     user_id: int
 
 
 # --- Post / Publicação ---
 
 
-class PostCreate(BaseModel):
-    content: str = Field(..., min_length=1)
+class PostCreate(ValidatedInput):
+    content: str = Field(..., min_length=1, max_length=5000)
     project_id: int | None = None
     image_url: str | None = Field(default=None, max_length=255)
 
@@ -188,8 +212,8 @@ class PostRead(BaseModel):
 # --- Comentários / Likes de projeto ---
 
 
-class CommentCreate(BaseModel):
-    content: str = Field(..., min_length=1)
+class CommentCreate(ValidatedInput):
+    content: str = Field(..., min_length=1, max_length=5000)
 
 
 class CommentRead(BaseModel):

@@ -6,3 +6,6 @@ README.md
 AGENTS.md
 CLAUDE.md
 .env*.local
+.env
+.env.*
+!.env.example

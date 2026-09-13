@@ -7,8 +7,10 @@ from sqlalchemy import (
     String,
     Table,
     Text,
+    LargeBinary,
 )
-from sqlalchemy.orm import relationship
+from sqlalchemy.orm import relationship, deferred, column_property
+from sqlalchemy import select, CheckConstraint
 from sqlalchemy.sql import func
 
 from .database import Base
@@ -80,19 +82,12 @@ class Project(Base):
 
     category = relationship("Category", back_populates="projects")
     owner = relationship("User", foreign_keys=[owner_id])
-    teams = relationship("Team", back_populates="project", cascade="all, delete-orphan")
+    teams = relationship("Team", back_populates="project", cascade="all, delete-orphan", passive_deletes=True)
     members = relationship("User", secondary=project_users, back_populates="projects")
     keywords = relationship("Keyword", secondary=projects_keywords)
-    likes = relationship("ProjectLike", cascade="all, delete-orphan")
-    comments = relationship("ProjectComment", cascade="all, delete-orphan")
+    likes = relationship("ProjectLike", cascade="all, delete-orphan", passive_deletes=True)
+    comments = relationship("ProjectComment", cascade="all, delete-orphan", passive_deletes=True)
 
-    @property
-    def likes_count(self) -> int:
-        return len(self.likes)
-
-    @property
-    def comments_count(self) -> int:
-        return len(self.comments)
 
 
 class Team(Base):
@@ -146,7 +141,7 @@ class Post(Base):
     image_url = Column(String(255), nullable=True)
     created_at = Column(Date, nullable=False, server_default=func.current_date())
     user_id = Column(Integer, ForeignKey("users.user_id", ondelete="CASCADE"), nullable=False)
-    project_id = Column(Integer, ForeignKey("project.project_id", ondelete="SET NULL"), nullable=True)
+    project_id = Column(Integer, ForeignKey("project.project_id", ondelete="CASCADE"), nullable=True)
 
     author = relationship("User")
     project = relationship("Project")
@@ -177,3 +172,52 @@ class ProjectComment(Base):
     )
 
     author = relationship("User")
+
+
+class AuthSession(Base):
+    __tablename__ = "auth_sessions"
+    session_id = Column(String(64), primary_key=True)
+    user_id = Column(Integer, ForeignKey("users.user_id", ondelete="CASCADE"), nullable=False, index=True)
+    expires_at = Column(Integer, nullable=False, index=True)
+
+
+class RateBucket(Base):
+    __tablename__ = "rate_buckets"
+    key = Column(String(64), primary_key=True)
+    window = Column(Integer, primary_key=True)
+    count = Column(Integer, nullable=False)
+
+
+class Upload(Base):
+    __tablename__ = "media_uploads"
+    upload_id = Column(String(32), primary_key=True)
+    owner_id = Column(Integer, ForeignKey("users.user_id", ondelete="CASCADE"), nullable=False, index=True)
+    data = deferred(Column(LargeBinary, nullable=False))
+    size = Column(Integer, nullable=False)
+    content_type = Column(String(32), nullable=False)
+    created_at = Column(Integer, nullable=False, index=True)
+    resource_type = Column(String(16), nullable=True)
+    resource_id = Column(Integer, nullable=True)
+
+# Contagens no SQL: listagens não carregam todos os likes/comentários em memória.
+Project.likes_count = column_property(select(func.count(ProjectLike.user_id)).where(
+    ProjectLike.project_id == Project.project_id).correlate_except(ProjectLike).scalar_subquery())
+Project.comments_count = column_property(select(func.count(ProjectComment.comment_id)).where(
+    ProjectComment.project_id == Project.project_id).correlate_except(ProjectComment).scalar_subquery())
+
+DATA_CHECKS = {'users': {'username_length': 'length(trim(username)) BETWEEN 3 AND 20',
+           'email_length': 'length(email) BETWEEN 3 AND 50',
+           'first_name_length': 'first_name IS NULL OR length(first_name) <= 20',
+           'last_name_length': 'last_name IS NULL OR length(last_name) <= 100'},
+ 'project': {'project_name': 'length(trim(name)) BETWEEN 1 AND 100',
+             'project_description': 'description IS NULL OR length(description) <= 10000',
+             'project_status': "status IN ('rascunho', 'ativo', 'pausado', 'concluido')"},
+ 'team': {'team_name_length': 'length(trim(team_name)) BETWEEN 1 AND 255',
+          'team_purpose': 'purpose IS NULL OR length(purpose) <= 5000'},
+ 'post': {'post_content': 'length(trim(content)) BETWEEN 1 AND 5000'},
+ 'project_comments': {'comment_content': 'length(trim(content)) BETWEEN 1 AND 5000'},
+ 'category': {'category_description': 'length(trim(description)) BETWEEN 1 AND 100'}}
+
+for table, checks in DATA_CHECKS.items():
+    for name, condition in checks.items():
+        Base.metadata.tables[table].append_constraint(CheckConstraint(condition, name=name))

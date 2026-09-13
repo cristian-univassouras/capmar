@@ -58,7 +58,6 @@ export default function ProjetoPage() {
   const [copied, setCopied] = useState(false);
 
   useEffect(() => {
-    setMe(getStoredUser());
     Promise.all([
       getProject(projectId),
       listTeams(projectId),
@@ -66,6 +65,7 @@ export default function ProjetoPage() {
       listComments(projectId),
     ])
       .then(([p, t, c, cm]) => {
+        setMe(getStoredUser());
         setProject(p);
         setCoverUrl(p.cover_url);
         setLogoUrl(p.logo_url);

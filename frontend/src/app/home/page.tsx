@@ -29,9 +29,9 @@ export default function PublicHomePage() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    setMe(getStoredUser());
     Promise.all([listProjects(), listCategories()])
       .then(([p, c]) => {
+        setMe(getStoredUser());
         setProjects(p.filter((proj) => proj.visibility));
         setCategories(c);
       })
