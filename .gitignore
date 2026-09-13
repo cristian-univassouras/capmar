@@ -18,3 +18,7 @@ uploads/
 
 # Docker / dados locais
 pgdata/
+
+# Arquivos locais de demonstração e documentação pessoal
+/backend/app/seed_demo.py
+/docs/thiago/
