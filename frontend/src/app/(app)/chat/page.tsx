@@ -1,4 +1,5 @@
 "use client";
+import ProfileLink from "@/app/_components/ProfileLink";
 import { Suspense, useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
@@ -66,14 +67,14 @@ function Room({ conversation, me }: { conversation: Conversation; me: User }) {
     finally { setSending(false); }
   }
   return <section aria-label="Conversa" className="min-w-0 space-y-4 rounded-2xl bg-white p-4 sm:p-5">
-    <h2 className="break-words text-2xl font-bold">{conversation.title}</h2>
-    <p className="break-words text-sm">Participantes: {conversation.participants.map((u) => "@" + u.username).join(", ")}</p>
+    <h2 aria-label={conversation.title} className="break-words text-2xl font-bold">{conversation.kind === "direct" ? <ProfileLink user={conversation.participants.find((u) => u.user_id !== me.user_id)}>{conversation.title}</ProfileLink> : conversation.title}</h2>
+    <p className="break-words text-sm">Participantes: {conversation.participants.map((u, index) => <span key={u.user_id}>{index > 0 && ", "}<ProfileLink user={u}>@{u.username}</ProfileLink></span>)}</p>
     <p role="status" className="text-sm text-primary">{status}</p>
     {error && <p role="alert" className="rounded-xl bg-red-50 p-3 text-red-700">{error}</p>}
     <div className="flex flex-wrap gap-4 text-sm"><button onClick={() => setRetry((n) => n + 1)} className="underline">Reconectar</button><Link href="/login" className="underline">Entrar novamente</Link></div>
     {more && messages.length > 0 && <button disabled={loadingHistory} onClick={async () => { setLoadingHistory(true); try { const older = await getMessages(conversation.conversation_id, messages[0].message_id); setMessages((items) => mergeMessages(items, older)); setMore(older.length === 50); } catch (e) { setError(e instanceof Error ? e.message : "Erro no histórico"); } finally { setLoadingHistory(false); } }} className="rounded-xl border p-3">Carregar mensagens anteriores</button>}
     <ol aria-label="Mensagens" aria-live="polite" className="max-h-[55dvh] space-y-3 overflow-y-auto rounded-xl bg-gray-50 p-3">
-      {messages.map((m) => <li key={m.message_id} className={"max-w-[95%] rounded-xl p-3 " + (m.sender_id === me.user_id ? "ml-auto bg-primary/10" : "bg-white")}><p className="text-xs font-semibold">{conversation.participants.find((u) => u.user_id === m.sender_id)?.username ?? "Participante"} · {new Date(m.created_at).toLocaleString("pt-BR")}</p><p className="whitespace-pre-wrap break-words">{m.content}</p></li>)}
+      {messages.map((m) => <li key={m.message_id} className={"max-w-[95%] rounded-xl p-3 " + (m.sender_id === me.user_id ? "ml-auto bg-primary/10" : "bg-white")}><p className="text-xs font-semibold"><ProfileLink user={conversation.participants.find((u) => u.user_id === m.sender_id)} userId={m.sender_id}>{conversation.participants.find((u) => u.user_id === m.sender_id)?.username ?? "Participante"}</ProfileLink> · {new Date(m.created_at).toLocaleString("pt-BR")}</p><p className="whitespace-pre-wrap break-words">{m.content}</p></li>)}
       {!messages.length && <li className="text-sm text-gray-600">As mensagens desta conversa aparecerão aqui.</li>}
     </ol>
     {conversation.kind === "legacy" ? <p className="rounded-xl bg-amber-50 p-3">Histórico de conversa anterior. Para enviar uma nova mensagem, abra o perfil da pessoa.</p> : <form onSubmit={send} className="space-y-3"><label className="block font-semibold">Mensagem<textarea value={text} onChange={(e) => setText(e.target.value)} maxLength={2000} required rows={3} className="mt-2 w-full rounded-xl border border-gray-300 p-3" /></label>

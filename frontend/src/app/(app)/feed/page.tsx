@@ -1,4 +1,5 @@
 "use client";
+import ProfileLink from "@/app/_components/ProfileLink";
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
@@ -82,7 +83,7 @@ export default function FeedPage() {
     <div className="max-w-2xl mx-auto space-y-6">
       {/* Criar publicação */}
       <form onSubmit={handlePublish} className="bg-white rounded-2xl border border-gray-100 p-4 flex gap-3">
-        <Avatar user={me} className="w-9 h-9 text-sm" />
+        <ProfileLink user={me}><Avatar user={me} className="w-9 h-9 text-sm" /></ProfileLink>
         <div className="min-w-0 flex-1">
           <textarea
             value={content}
@@ -151,11 +152,11 @@ export default function FeedPage() {
         posts.map((post) => (
           <div key={post.post_id} className="bg-white rounded-2xl border border-gray-100 p-5 space-y-4">
             <div className="flex items-center gap-3">
-              <Avatar user={post.author} className="w-10 h-10 text-sm" />
+              <ProfileLink user={post.author} userId={post.user_id}><Avatar user={post.author} className="w-10 h-10 text-sm" /></ProfileLink>
               <div className="flex-1 min-w-0">
-                <p className="font-semibold text-sm text-gray-800">{displayNameOf(post.author)}</p>
+                <p className="font-semibold text-sm text-gray-800"><ProfileLink user={post.author} userId={post.user_id}>{displayNameOf(post.author)}</ProfileLink></p>
                 <p className="text-xs text-gray-400">
-                  {post.author?.username ? `@${post.author.username} · ` : ""}
+                  {post.author && <><ProfileLink user={post.author}>@{post.author.username}</ProfileLink>{" · "}</>}
                   {formatDate(post.created_at)}
                 </p>
               </div>

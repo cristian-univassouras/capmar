@@ -1,4 +1,5 @@
 "use client";
+import ProfileLink from "@/app/_components/ProfileLink";
 
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
@@ -202,7 +203,7 @@ export default function EquipePage() {
             <>
               <h1 className="font-heading font-black text-2xl text-foreground">{team.team_name}</h1>
               <p className="text-gray-500 text-sm mt-0.5">
-                {team.leader ? `Liderada por @${team.leader.username}` : "Sem líder"} · Criada em{" "}
+                {team.leader ? <>Liderada por <ProfileLink user={team.leader}>@{team.leader.username}</ProfileLink></> : "Sem líder"} · Criada em{" "}
                 {formatDate(team.created_at)}
               </p>
               {(isLeader || team.members.some((member) => member.user_id === me?.user_id)) && <Link href={"/chat?team=" + team.team_id} className="mt-4 inline-block rounded-xl bg-primary px-5 py-3 text-white">Chat da equipe</Link>}
@@ -269,10 +270,10 @@ export default function EquipePage() {
           <div className="bg-white rounded-2xl border border-gray-100 divide-y divide-gray-50">
             {team.members.map((member) => (
               <div key={member.user_id} className="flex items-center gap-3 p-4">
-                <Avatar user={member} className="w-10 h-10 text-sm" />
+                <ProfileLink user={member}><Avatar user={member} className="w-10 h-10 text-sm" /></ProfileLink>
                 <div className="flex-1 min-w-0">
-                  <p className="font-semibold text-sm text-gray-800 truncate">{displayNameOf(member)}</p>
-                  <p className="text-xs text-gray-400 truncate">@{member.username}</p>
+                  <p className="font-semibold text-sm text-gray-800 truncate"><ProfileLink user={member}>{displayNameOf(member)}</ProfileLink></p>
+                  <p className="text-xs text-gray-400 truncate"><ProfileLink user={member}>@{member.username}</ProfileLink></p>
                 </div>
                 {member.user_id === team.leader_id ? (
                   <span className="text-xs font-semibold px-3 py-1 rounded-full bg-primary/10 text-primary">

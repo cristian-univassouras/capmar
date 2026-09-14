@@ -1,4 +1,5 @@
 "use client";
+import ProfileLink from "@/app/_components/ProfileLink";
 /* eslint-disable @next/next/no-img-element -- A entrega das mídias verifica o cookie do navegador. */
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
@@ -143,7 +144,7 @@ export default function ProjetoClient({ initialProject }: { initialProject: Proj
           </form> : <p className="rounded-xl bg-white p-4 text-sm"><Link href={loginPath} className="font-semibold text-primary underline">Entre</Link> ou <Link href={"/register?next=" + encodeURIComponent("/projeto/" + projectId)} className="font-semibold text-primary underline">crie uma conta</Link> para comentar e curtir.</p>}
           {comments.length === 0 && <p className="text-sm text-gray-600">Ainda não há comentários.</p>}
           {comments.map((comment) => <article key={comment.comment_id} className="flex gap-3 rounded-2xl border border-gray-200 bg-white p-4">
-            <Avatar user={comment.author} className="h-9 w-9 shrink-0" />
+            <ProfileLink user={comment.author} userId={comment.user_id} className="shrink-0"><Avatar user={comment.author} className="h-9 w-9 shrink-0" /></ProfileLink>
             <div className="min-w-0 flex-1"><div className="flex flex-wrap items-center gap-3">
               <Link href={"/usuario/" + comment.user_id} className="break-words font-semibold">{displayNameOf(comment.author)}</Link>
               <span className="text-xs text-gray-500">{formatDate(comment.created_at)}</span>
@@ -156,7 +157,7 @@ export default function ProjetoClient({ initialProject }: { initialProject: Proj
           {teams.length === 0 && <p className="text-sm text-gray-600">Nenhuma equipe vinculada.</p>}
           <div className="grid gap-4 sm:grid-cols-2">{teams.map((team) => <article key={team.team_id} className="min-w-0 space-y-2 rounded-2xl border border-gray-200 bg-white p-4">
             <h3 className="break-words font-bold">{team.team_name}</h3><p className="break-words text-sm text-gray-600">{team.purpose}</p>
-            <p className="text-sm">Liderança: {displayNameOf(team.leader)}</p><p className="text-sm">{team.members.length} integrante(s)</p>
+            <p className="text-sm">Liderança: <ProfileLink user={team.leader}>{displayNameOf(team.leader)}</ProfileLink></p><p className="text-sm">{team.members.length} integrante(s)</p>
             {me && <Link href={"/equipe/" + team.team_id} className="inline-block py-2 text-sm font-semibold text-primary">Ver equipe</Link>}
           </article>)}</div>
         </section>

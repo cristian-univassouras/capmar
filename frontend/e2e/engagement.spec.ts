@@ -151,28 +151,46 @@ test("administrador com MFA modera e registra ações; painel funciona no celula
   await page.getByRole("button", { name: "Entrar", exact: true }).click();
   await expect(page).toHaveURL(/\/feed$/);
   await page.goto("/admin");
-  const userForm = page.getByRole("form", { name: "Gerenciar e2e_alice", exact: true });
-  await userForm.getByLabel("Conta ativa").uncheck();
+  await expect(page.getByRole("table", { name: "Gestão de usuários", exact: true })).toBeVisible();
+  const userRow = page.getByRole("row").filter({ has: page.getByRole("link", { name: "Ver perfil de @e2e_alice", exact: true }) });
+  const userForm = userRow.getByRole("form", { name: "Gerenciar e2e_alice", exact: true });
+  const adminRow = page.getByRole("row").filter({ has: page.getByRole("link", { name: "Ver perfil de @demo_admin", exact: true }) });
+  await expect(adminRow.getByLabel("Conta ativa")).toBeDisabled();
+  try {
+  for (const width of [1366, 390, 320]) {
+    await page.setViewportSize({ width, height: 900 }); await noOverflow(page);
+    await page.screenshot({ path: "../docs/thiago/admin-users-" + width + ".png", fullPage: true });
+  }
+  await page.setViewportSize({ width: 1366, height: 900 });
+  await userRow.getByLabel("Conta ativa").uncheck();
   await userForm.getByLabel("Motivo").fill("Teste de suspensão administrativa");
   await userForm.getByRole("button", { name: "Salvar usuário" }).click();
-  await expect(userForm.getByLabel("Conta ativa")).not.toBeChecked();
-  await userForm.getByLabel("Conta ativa").check();
+  await expect(userRow.getByLabel("Conta ativa")).not.toBeChecked();
+  await userRow.getByLabel("Conta ativa").check();
   await userForm.getByLabel("Motivo").fill("Teste de reativação administrativa");
   await userForm.getByRole("button", { name: "Salvar usuário" }).click();
-  await expect(userForm.getByLabel("Conta ativa")).toBeChecked();
+  await expect(userRow.getByLabel("Conta ativa")).toBeChecked();
   await page.getByRole("button", { name: "Moderação", exact: true }).click();
+  await expect(page.getByRole("table", { name: "Moderação de publicações", exact: true })).toBeVisible();
   const moderation = page.getByRole("form", { name: "Moderar publicação " + post.post_id, exact: true });
   await moderation.getByLabel("Motivo").fill("Teste de moderação auditada " + post.post_id);
   await moderation.getByRole("button", { name: "Ocultar publicação" }).click();
   await expect(moderation.getByRole("button", { name: "Restaurar publicação" })).toBeVisible();
+  for (const width of [1366, 390, 320]) {
+    await page.setViewportSize({ width, height: 900 }); await noOverflow(page);
+    await page.screenshot({ path: "../docs/thiago/admin-posts-" + width + ".png", fullPage: true });
+  }
   await page.getByRole("button", { name: "Auditoria", exact: true }).click();
+  await expect(page.getByRole("table", { name: "Registro de auditoria", exact: true })).toBeVisible();
   await expect(page.getByText("Teste de moderação auditada " + post.post_id, { exact: true })).toBeVisible();
   for (const width of [1366, 390, 320]) {
     await page.setViewportSize({ width, height: 900 }); await noOverflow(page);
     await page.screenshot({ path: "../docs/thiago/admin-" + width + ".png", fullPage: true });
   }
+  } finally {
   // Restaura estado da conta de teste mesmo se o próximo teste usar outra viewport.
   expect((await page.request.patch(api + "/admin/users/" + current.user_id, { headers, data: { role: "user", is_active: true, reason: "Finalização dos testes locais" } })).status()).toBe(200);
   await login(page, "e2e_alice");
   expect((await page.request.delete(api + "/posts/" + post.post_id, { headers })).status()).toBe(204);
+  }
 });
