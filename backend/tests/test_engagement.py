@@ -23,7 +23,7 @@ def test_socket_quota_and_release():
     from contextlib import ExitStack
     alice, _ = client_for("alice")
     _, bob = client_for("bob")
-    cid = alice.post("/chat/conversations", json={"title": "Cota", "participant_ids": [bob["user_id"]]}).json()["conversation_id"]
+    cid = alice.post("/chat/direct", json={"recipient_id": bob["user_id"]}).json()["conversation_id"]
     with ExitStack() as stack:
         sockets = [stack.enter_context(alice.websocket_connect(f"/chat/ws/{cid}", headers={"Origin": "http://localhost:3000"})) for _ in range(3)]
         for ws in sockets: ws.receive_json()
@@ -147,7 +147,7 @@ def test_chat_access_reconnect_and_idempotency():
     alice, a = client_for("alice")
     bob, b = client_for("bob")
     outsider, _ = client_for("outsider")
-    created = alice.post("/chat/conversations", json={"title": "Equipe", "participant_ids": [b["user_id"]]})
+    created = alice.post("/chat/direct", json={"recipient_id": b["user_id"]})
     assert created.status_code == 201
     cid = created.json()["conversation_id"]
     assert len(bob.get("/chat/conversations").json()) == 1
@@ -178,7 +178,7 @@ def test_chat_access_reconnect_and_idempotency():
 def test_chat_validation_limits_and_concurrent_send():
     alice, _ = client_for("alice")
     bob, b = client_for("bob")
-    cid = alice.post("/chat/conversations", json={"title": "Conversa", "participant_ids": [b["user_id"]]}).json()["conversation_id"]
+    cid = alice.post("/chat/direct", json={"recipient_id": b["user_id"]}).json()["conversation_id"]
     assert alice.post(f"/chat/conversations/{cid}/messages", json={"content": " " * 8, "client_id": str(uuid.uuid4())}).status_code == 422
     assert alice.post(f"/chat/conversations/{cid}/messages", json={"content": "x" * 2001, "client_id": str(uuid.uuid4())}).status_code == 422
     payload = {"content": "Só uma vez", "client_id": str(uuid.uuid4())}

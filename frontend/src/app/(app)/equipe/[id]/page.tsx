@@ -205,6 +205,7 @@ export default function EquipePage() {
                 {team.leader ? `Liderada por @${team.leader.username}` : "Sem líder"} · Criada em{" "}
                 {formatDate(team.created_at)}
               </p>
+              {(isLeader || team.members.some((member) => member.user_id === me?.user_id)) && <Link href={"/chat?team=" + team.team_id} className="mt-4 inline-block rounded-xl bg-primary px-5 py-3 text-white">Chat da equipe</Link>}
               {team.purpose && <p className="text-gray-600 text-sm mt-3 leading-relaxed">{team.purpose}</p>}
 
               {team.project && (

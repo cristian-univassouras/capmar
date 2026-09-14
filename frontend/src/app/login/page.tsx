@@ -27,7 +27,7 @@ export default function LoginPage() {
       });
       saveSession(auth);
       const next = new URLSearchParams(window.location.search).get("next");
-      const safeNext = next && /^\/(projeto\/\d+|projetos|feed|perfil|admin|chat|seguranca|equipes|equipe\/\d+)$/.test(next) ? next : "/feed";
+      const safeNext = next && /^\/(usuario\/\d+|projeto\/\d+|projetos|feed|perfil|admin|chat|seguranca|equipes|equipe\/\d+)$/.test(next) ? next : "/feed";
       router.push(safeNext);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Erro ao entrar.");

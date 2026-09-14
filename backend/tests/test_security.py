@@ -255,6 +255,7 @@ def test_composite_team_rollback(client, monkeypatch):
     with database.SessionLocal() as db:
         assert db.scalar(select(func.count()).select_from(models.Team)) == 0
         assert db.scalar(select(func.count()).select_from(models.team_users)) == 0
+        assert db.scalar(select(func.count()).select_from(models.Conversation)) == 0
 
 
 def test_quota_is_atomic_between_connections(client, monkeypatch):

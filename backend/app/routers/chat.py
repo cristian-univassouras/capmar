@@ -2,51 +2,86 @@ import asyncio
 import secrets
 import time
 from fastapi import APIRouter, Depends, HTTPException, Query, WebSocket, WebSocketDisconnect
-from sqlalchemy import delete, func, select, text
+from sqlalchemy import delete, func, select, text, and_, or_
+from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.orm import Session
 from starlette.concurrency import run_in_threadpool
 from .. import models, schemas
 from ..config import settings
 from ..database import get_db, SessionLocal
 from ..deps import get_current_user, session_from_request
-from ..engagement_schemas import ConversationCreate, MessageCreate, MessageRead
+from ..engagement_schemas import DirectConversationCreate, MessageCreate, MessageRead
 from ..limits import consume, client_ip
 
 router = APIRouter(prefix="/chat", tags=["chat"])
 
 
+def participant_access(uid):
+    c = models.Conversation
+    membership = select(models.ConversationParticipant.conversation_id).where(
+        models.ConversationParticipant.conversation_id == c.conversation_id,
+        models.ConversationParticipant.user_id == uid).exists()
+    team_access = select(models.Team.team_id).where(models.Team.team_id == c.team_id,
+        or_(models.Team.leader_id == uid, select(models.team_users.c.team_id).where(
+            models.team_users.c.team_id == models.Team.team_id, models.team_users.c.user_id == uid).exists())).exists()
+    return and_(membership, or_(c.kind != "team", team_access))
+
+
 def require_participant(db, cid, uid):
-    if db.get(models.ConversationParticipant, (cid, uid)) is None:
+    row = db.scalar(select(models.Conversation).where(models.Conversation.conversation_id == cid,
+                    participant_access(uid)).execution_options(populate_existing=True))
+    if row is None:
         raise HTTPException(404, "Conversa não encontrada")
+    return row
 
 
-def conversation_read(row):
-    return {"conversation_id": row.conversation_id, "title": row.title, "created_at": row.created_at,
-            "participants": [schemas.PublicUser.model_validate(u) for u in row.participants]}
+def conversation_read(row, uid):
+    other = next((u for u in row.participants if u.user_id != uid), None)
+    title = "@" + other.username if row.kind == "direct" and other else row.title
+    return {"conversation_id": row.conversation_id, "title": title, "kind": row.kind, "team_id": row.team_id,
+            "created_at": row.created_at, "participants": [schemas.PublicUser.model_validate(u) for u in row.participants]}
 
 
-@router.post("/conversations", status_code=201)
-def create(payload: ConversationCreate, db: Session = Depends(get_db, scope="function"), user=Depends(get_current_user)):
+@router.post("/direct", status_code=201)
+def create_direct(payload: DirectConversationCreate, db: Session = Depends(get_db, scope="function"), user=Depends(get_current_user)):
+    if payload.recipient_id == user.user_id:
+        raise HTTPException(422, "Escolha o perfil de outra pessoa")
+    recipient = db.get(models.User, payload.recipient_id)
+    if recipient is None or not recipient.is_active:
+        raise HTTPException(404, "Pessoa indisponível")
+    low, high = sorted([user.user_id, recipient.user_id])
+    existing = db.scalar(select(models.Conversation).where(models.Conversation.direct_low == low,
+                         models.Conversation.direct_high == high))
+    if existing:
+        return conversation_read(existing, user.user_id)
     consume(f"chat-create:{user.user_id}", 10, 3600)
-    ids = sorted(set(payload.participant_ids + [user.user_id]))
-    if len(ids) < 2:
-        raise HTTPException(422, "Selecione ao menos outra pessoa")
-    users = list(db.scalars(select(models.User).where(models.User.user_id.in_(ids), models.User.is_active)))
-    if len(users) != len(ids):
-        raise HTTPException(422, "Participante inexistente ou indisponível")
-    conversation = models.Conversation(title=payload.title, participants=users)
-    db.add(conversation)
-    db.flush()
-    return conversation_read(conversation)
+    cid = db.scalar(insert(models.Conversation).values(title="Mensagem direta", kind="direct", direct_low=low, direct_high=high)
+                    .on_conflict_do_nothing(constraint="chat_direct_unique").returning(models.Conversation.conversation_id))
+    if cid is not None:
+        db.execute(insert(models.ConversationParticipant), [{"conversation_id": cid, "user_id": uid} for uid in (low, high)])
+    else:
+        cid = db.scalar(select(models.Conversation.conversation_id).where(models.Conversation.direct_low == low,
+                        models.Conversation.direct_high == high))
+    return conversation_read(require_participant(db, cid, user.user_id), user.user_id)
 
 
 @router.get("/conversations")
 def conversations(before: int | None = Query(None, ge=1), limit: int = Query(30, ge=1, le=100),
                   db: Session = Depends(get_db, scope="function"), user=Depends(get_current_user)):
-    stmt = select(models.Conversation).where(models.Conversation.conversation_id.in_(
-        select(models.ConversationParticipant.conversation_id).where(models.ConversationParticipant.user_id == user.user_id)))
+    stmt = select(models.Conversation).where(participant_access(user.user_id))
     if before: stmt = stmt.where(models.Conversation.conversation_id < before)
-    return [conversation_read(c) for c in db.scalars(stmt.order_by(models.Conversation.conversation_id.desc()).limit(limit))]
+    return [conversation_read(c, user.user_id) for c in db.scalars(stmt.order_by(models.Conversation.conversation_id.desc()).limit(limit))]
+
+
+@router.get("/teams/{team_id}")
+def team_conversation(team_id: int, db: Session = Depends(get_db, scope="function"), user=Depends(get_current_user)):
+    cid = db.scalar(select(models.Conversation.conversation_id).where(models.Conversation.team_id == team_id))
+    return conversation_read(require_participant(db, cid, user.user_id), user.user_id)
+
+
+@router.get("/conversations/{cid}")
+def detail(cid: int, db: Session = Depends(get_db, scope="function"), user=Depends(get_current_user)):
+    return conversation_read(require_participant(db, cid, user.user_id), user.user_id)
 
 
 @router.get("/conversations/{cid}/messages", response_model=list[MessageRead])
@@ -65,10 +100,16 @@ def messages(cid: int, after: int = Query(0, ge=0, le=9223372036854775807),
 
 @router.post("/conversations/{cid}/messages", response_model=MessageRead, status_code=201)
 def send(cid: int, payload: MessageCreate, db: Session = Depends(get_db, scope="function"), user=Depends(get_current_user)):
-    require_participant(db, cid, user.user_id)
+    conversation = require_participant(db, cid, user.user_id)
+    if conversation.kind == "legacy":
+        raise HTTPException(403, "Histórico somente para leitura; inicie uma mensagem pelo perfil")
+    # Mesma ordem de bloqueio usada pela sincronização da equipe.
+    if conversation.team_id is not None:
+        db.execute(select(models.Team.team_id).where(models.Team.team_id == conversation.team_id).with_for_update())
     consume(f"chat-send:{user.user_id}", 30, 60)
     # Serializa IDs/commits por conversa: nenhum cursor pula uma mensagem ainda não confirmada.
     db.execute(select(models.Conversation.conversation_id).where(models.Conversation.conversation_id == cid).with_for_update())
+    require_participant(db, cid, user.user_id)  # Revalida após aguardar alteração/remoção de integrante.
     existing = db.scalar(select(models.ChatMessage).where(models.ChatMessage.conversation_id == cid,
                          models.ChatMessage.sender_id == user.user_id, models.ChatMessage.client_id == str(payload.client_id)))
     if existing:

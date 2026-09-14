@@ -16,7 +16,7 @@ from .routers import admin, account_security, chat, auth, categories, posts, pro
 async def lifespan(app: FastAPI):
     # DDL e seeds pertencem ao comando de migração, nunca ao usuário da aplicação.
     with engine.connect() as conn:
-        if conn.scalar(text("SELECT version_num FROM alembic_version")) != "0004_engagement":
+        if conn.scalar(text("SELECT version_num FROM alembic_version")) != "0005_profile_team_chat":
             raise RuntimeError("Banco desatualizado: execute alembic upgrade head com a credencial de migração")
     yield
 

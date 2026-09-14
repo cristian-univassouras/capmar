@@ -222,8 +222,17 @@ class AuditLog(Base):
 
 class Conversation(Base):
     __tablename__ = "conversations"
+    __table_args__ = (UniqueConstraint("team_id", name="chat_team_unique"),
+                      UniqueConstraint("direct_low", "direct_high", name="chat_direct_unique"),
+                      CheckConstraint("(kind = 'legacy' AND team_id IS NULL AND direct_low IS NULL AND direct_high IS NULL) OR "
+                                      "(kind = 'team' AND team_id IS NOT NULL AND direct_low IS NULL AND direct_high IS NULL) OR "
+                                      "(kind = 'direct' AND team_id IS NULL AND direct_low IS NOT NULL AND direct_high IS NOT NULL AND direct_low < direct_high)", name="chat_kind"))
+    kind = Column(String(16), nullable=False, server_default="legacy")
+    team_id = Column(Integer, ForeignKey("team.team_id", ondelete="CASCADE"))
+    direct_low = Column(Integer, ForeignKey("users.user_id", ondelete="CASCADE"))
+    direct_high = Column(Integer, ForeignKey("users.user_id", ondelete="CASCADE"))
     conversation_id = Column(Integer, primary_key=True)
-    title = Column(String(100), nullable=False)
+    title = Column(String(255), nullable=False)
     created_at = Column(DateTime(timezone=True), nullable=False, server_default=func.now())
     participants = relationship("User", secondary="conversation_participants", lazy="selectin")
 

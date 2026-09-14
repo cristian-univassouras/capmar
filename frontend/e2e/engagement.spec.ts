@@ -26,33 +26,80 @@ test("chat entrega mensagem, responde e recupera ao reconectar", async ({ page, 
   const bob = await bobContext.newPage();
   try {
     await login(bob, "e2e_bob");
-    await page.goto("/chat");
-    await page.getByRole("button", { name: "Nova conversa", exact: true }).click();
-    const form = page.getByRole("form", { name: "Nova conversa" });
-    const title = "Chat E2E " + info.project.name + " " + Date.now();
-    await form.getByLabel("Título da conversa").fill(title);
-    await form.getByLabel("@e2e_bob", { exact: true }).check();
-    await form.getByRole("button", { name: "Criar conversa" }).click();
+    const aliceUser = await (await page.request.get(api + "/auth/me")).json();
+    const bobUser = await (await bob.request.get(api + "/auth/me")).json();
+    await page.goto("/usuario/" + aliceUser.user_id);
+    await expect(page.getByRole("heading", { level: 1 })).toBeVisible();
+    await expect(page.getByRole("button", { name: "Enviar mensagem", exact: true })).toHaveCount(0);
+    await page.goto("/usuario/" + bobUser.user_id);
+    await page.getByRole("button", { name: "Enviar mensagem", exact: true }).click();
+    await expect(page).toHaveURL(/\/chat\?conversation=\d+$/);
+    const cid = new URL(page.url()).searchParams.get("conversation");
+    const greeting = "Olá da Alice " + Date.now();
+    const reply = "Resposta do Bob " + Date.now();
     const room = page.getByRole("region", { name: "Conversa", exact: true });
     await expect(room.getByRole("status")).toHaveText("Conectado");
-    await bob.goto("/chat");
-    await bob.getByRole("button", { name: title, exact: true }).click();
+    await bob.goto("/usuario/" + aliceUser.user_id);
+    await bob.getByRole("button", { name: "Enviar mensagem", exact: true }).click();
+    await expect(bob).toHaveURL("http://localhost:3000/chat?conversation=" + cid);
+    await expect(page.getByRole("button", { name: "Nova conversa", exact: true })).toHaveCount(0);
     const other = bob.getByRole("region", { name: "Conversa", exact: true });
     await expect(other.getByRole("status")).toHaveText("Conectado");
-    await room.getByLabel("Mensagem", { exact: true }).fill("Olá da Alice");
+    await room.getByLabel("Mensagem", { exact: true }).fill(greeting);
     await room.getByRole("button", { name: "Enviar mensagem" }).click();
-    await expect(other.getByText("Olá da Alice", { exact: true })).toBeVisible();
-    await other.getByLabel("Mensagem", { exact: true }).fill("Resposta do Bob");
+    await expect(other.getByText(greeting, { exact: true })).toBeVisible();
+    await other.getByLabel("Mensagem", { exact: true }).fill(reply);
     await other.getByRole("button", { name: "Enviar mensagem" }).click();
-    await expect(room.getByText("Resposta do Bob", { exact: true })).toBeVisible();
+    await expect(room.getByText(reply, { exact: true })).toBeVisible();
     await room.getByRole("button", { name: "Reconectar", exact: true }).click();
     await expect(room.getByRole("status")).toHaveText("Conectado");
-    await expect(room.getByText("Olá da Alice", { exact: true })).toHaveCount(1);
+    await expect(room.getByText(greeting, { exact: true })).toHaveCount(1);
     await noOverflow(page); await noOverflow(bob);
     await page.screenshot({ path: "../docs/thiago/chat-" + info.project.name + ".png", fullPage: true });
+    const projectResponse = await page.request.post(api + "/projects", { headers, data: { name: "Equipe chat E2E " + Date.now(), visibility: false } });
+    expect(projectResponse.status()).toBe(201);
+    const pid = (await projectResponse.json()).project_id;
+    try {
+      const teamResponse = await page.request.post(api + "/teams", { headers, data: { team_name: "Equipe chat " + Date.now(), project_id: pid } });
+      expect(teamResponse.status()).toBe(201);
+      const team = await teamResponse.json();
+      expect((await page.request.post(api + "/teams/" + team.team_id + "/members", { headers, data: { user_id: bobUser.user_id } })).status()).toBe(200);
+      await page.goto("/equipe/" + team.team_id);
+      await page.getByRole("link", { name: "Chat da equipe", exact: true }).click();
+      await expect(room.getByRole("heading", { name: team.team_name, exact: true })).toBeVisible();
+      await bob.goto("/chat");
+      await bob.getByRole("button", { name: team.team_name, exact: true }).click();
+      await expect(other.getByRole("status")).toHaveText("Conectado");
+      const teamMessage = "Mensagem coletiva " + Date.now();
+      await room.getByLabel("Mensagem", { exact: true }).fill(teamMessage);
+      await room.getByRole("button", { name: "Enviar mensagem" }).click();
+      await expect(other.getByText(teamMessage, { exact: true })).toBeVisible();
+      await noOverflow(page); await noOverflow(bob);
+      expect((await page.request.delete(api + "/teams/" + team.team_id + "/members/" + bobUser.user_id, { headers })).status()).toBe(200);
+      await expect(other.getByRole("status")).toContainText("acesso encerrado");
+      await expect(other.getByText(teamMessage, { exact: true })).toHaveCount(0);
+      await bob.goto("/chat");
+      await expect(bob.getByRole("button", { name: team.team_name, exact: true })).toHaveCount(0);
+    } finally { expect((await page.request.delete(api + "/projects/" + pid, { headers })).status()).toBe(204); }
     await page.goto("/admin");
     await expect(page.getByRole("heading", { name: "Acesso restrito" })).toBeVisible();
   } finally { await bobContext.close(); }
+});
+
+test("mensagem pelo perfil encaminha visitante ao login e retorna ao perfil", async ({ page }) => {
+  const users = await (await page.request.get(api + "/users?q=e2e_bob")).json();
+  const recipient = users.find((u: { username: string }) => u.username === "e2e_bob");
+  expect(recipient).toBeTruthy();
+  const profile = "/usuario/" + recipient.user_id;
+  await page.goto(profile);
+  await page.getByRole("button", { name: "Enviar mensagem", exact: true }).click();
+  await expect(page).toHaveURL("http://localhost:3000/login?next=" + encodeURIComponent(profile));
+  await page.getByLabel("E-mail").fill("e2e_alice@example.com");
+  await page.getByLabel("Senha", { exact: true }).fill(demoPassword);
+  await page.getByRole("button", { name: "Entrar", exact: true }).click();
+  await expect(page).toHaveURL("http://localhost:3000" + profile);
+  await page.getByRole("button", { name: "Enviar mensagem", exact: true }).click();
+  await expect(page.getByRole("region", { name: "Conversa", exact: true }).getByRole("heading", { name: "@e2e_bob" })).toBeVisible();
 });
 
 test("SEO inicial, apoio, autoria e transição público/privado", async ({ page, browser }) => {

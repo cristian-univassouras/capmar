@@ -54,16 +54,8 @@ class ModeratePost(Input):
     reason: str = Field(min_length=5, max_length=500)
 
 
-class ConversationCreate(Input):
-    title: str = Field(min_length=1, max_length=100)
-    participant_ids: list[int] = Field(min_length=1, max_length=19)
-
-    @field_validator("participant_ids")
-    @classmethod
-    def participants(cls, ids):
-        if any(i <= 0 for i in ids):
-            raise ValueError("Participante inválido")
-        return sorted(set(ids))
+class DirectConversationCreate(Input):
+    recipient_id: int = Field(gt=0, le=2147483647)
 
 
 class MessageCreate(Input):

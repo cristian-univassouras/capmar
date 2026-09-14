@@ -1,9 +1,11 @@
 import { getJson, patchJson, postJson, type Author, type User, type Post } from "./api";
-export type Conversation = { conversation_id: number; title: string; participants: Author[]; created_at: string };
+export type Conversation = { conversation_id: number; title: string; kind: "direct" | "team" | "legacy"; team_id: number | null; participants: Author[]; created_at: string };
 export type Message = { message_id: number; conversation_id: number; sender_id: number; content: string; client_id: string; created_at: string };
 export type Audit = { audit_id: number; actor_id: number | null; action: string; target_type: string; target_id: number | null; reason: string; details: string; created_at: string };
 export const getConversations = (before?: number) => getJson<Conversation[]>("/chat/conversations" + (before ? "?before=" + before : ""));
-export const createConversation = (title: string, participant_ids: number[]) => postJson<Conversation>("/chat/conversations", { title, participant_ids });
+export const createDirectConversation = (recipient_id: number) => postJson<Conversation>("/chat/direct", { recipient_id });
+export const getConversation = (id: number) => getJson<Conversation>("/chat/conversations/" + id);
+export const getTeamConversation = (id: number) => getJson<Conversation>("/chat/teams/" + id);
 export const getMessages = (id: number, before?: number) => getJson<Message[]>("/chat/conversations/" + id + "/messages" + (before ? "?before=" + before : ""));
 export const sendMessage = (id: number, content: string, client_id: string) => postJson<Message>("/chat/conversations/" + id + "/messages", { content, client_id });
 export const reauthenticate = (password: string, otp: string) => postJson("/auth/reauthenticate", { password, otp });
