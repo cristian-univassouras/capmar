@@ -1,106 +1,75 @@
+import Link from "next/link";
 import PublicFrame from "@/app/_components/PublicFrame";
 
+const team = [
+  { name: "Cristian Barboza", area: "Frontend" },
+  { name: "Endriel Medeiros", area: "Frontend" },
+  { name: "Felipe Sodré", area: "Backend" },
+  { name: "Andrey Violante", area: "Backend" },
+];
+
+const h2 = "font-heading text-2xl font-bold tracking-tight text-secondary sm:text-3xl";
+const body = "max-w-[68ch] text-base leading-relaxed text-gray-600";
 
 export default function SobrePage() {
   return (
-    <PublicFrame className="max-w-4xl">
-
-
-      <div className="max-w-3xl mx-auto px-4 pt-4 pb-8 flex flex-col gap-12">
-
-        {/* Hero */}
-        <div>
-          <p className="text-accent font-semibold text-sm uppercase tracking-widest mb-4">Sobre o CapMar</p>
-          <h1 className="font-heading font-black text-4xl md:text-5xl uppercase tracking-tighter text-primary leading-none mb-8">
-            Feito em<br />Maricá,<br />para Maricá.
-          </h1>
-          <p className="text-gray-600 text-lg leading-relaxed">
-            Maricá tem gente criativa demais, com projetos bons demais, que ficam no papel por falta de visibilidade.
-            O CapMar nasceu da vontade de mudar isso.
+    <PublicFrame className="max-w-3xl">
+      <div className="grid gap-12 pb-4 pt-2">
+        <header className="grid gap-5">
+          <h1 className="font-heading text-4xl font-extrabold leading-[1.05] tracking-[-0.03em] text-secondary sm:text-5xl">Feito em Maricá, para Maricá.</h1>
+          <p className="max-w-[60ch] text-lg leading-relaxed text-gray-600">
+            Maricá tem gente criativa demais, com projetos bons demais, que ficam no papel por falta de visibilidade. O CapMar nasceu da vontade de mudar isso.
           </p>
-        </div>
+        </header>
 
-        {/* Origem */}
-        <div className="flex flex-col gap-6">
-          <h2 className="font-heading font-black text-3xl text-primary uppercase tracking-tighter">
-            Como surgiu
-          </h2>
-          <p className="text-gray-600 text-base leading-relaxed">
-            Somos estudantes de Engenharia de Software da Universidade de Vassouras — Campus Maricá.
-            Durante o curso, ficou claro pra gente que a cidade tem um potencial enorme, mas falta um
-            espaço digital onde empreendedores locais possam mostrar o que estão construindo.
+        <section className="grid gap-4" aria-labelledby="como-surgiu">
+          <h2 id="como-surgiu" className={h2}>Como surgiu</h2>
+          <p className={body}>
+            Somos estudantes de Engenharia de Software da Universidade de Vassouras, campus Maricá. Durante o curso, ficou claro que a cidade tem um potencial enorme, mas falta um espaço digital onde empreendedores locais mostrem o que estão construindo.
           </p>
-          <p className="text-gray-600 text-base leading-relaxed">
-            Não queríamos fazer mais um projeto acadêmico que some na gaveta. Queríamos construir algo
-            que as pessoas de verdade pudessem usar — um lugar onde quem tem uma ideia encontra quem
-            quer investir nela, e vice-versa.
+          <p className={body}>
+            Não queríamos fazer mais um projeto acadêmico que some na gaveta. Queríamos algo que as pessoas usassem de verdade: um lugar onde quem tem uma ideia encontra quem quer apoiá-la, e o contrário também.
           </p>
-        </div>
+        </section>
 
-        {/* O que é */}
-        <div className="bg-primary rounded-2xl p-7 md:p-9 text-white flex flex-col gap-6">
-          <h2 className="font-heading font-black text-3xl uppercase tracking-tighter">
-            O que é o CapMar
-          </h2>
-          <p className="text-white/80 text-base leading-relaxed">
-            Uma rede social focada em projetos. Aqui, projetistas e microempreendedores de Maricá
-            criam seu perfil, publicam o que estão fazendo e constroem uma audiência real — sem
-            precisar brigar por atenção em redes generalistas.
+        <section className="grid gap-4 rounded-[20px] bg-primary-soft p-6 sm:p-8" aria-labelledby="o-que-e">
+          <h2 id="o-que-e" className={h2}>O que é o CapMar</h2>
+          <p className={body}>
+            Uma vitrine de projetos locais. Quem cria apresenta a ideia, a equipe e os materiais, e recebe contato sem precisar disputar atenção em redes generalistas.
           </p>
-          <p className="text-white/80 text-base leading-relaxed">
-            Do lado de quem investe, a plataforma oferece uma vitrine de projetos locais,
-            com contexto suficiente pra tomar uma boa decisão de apoio.
+          <p className={body}>
+            Quem quer apoiar encontra projetos de Maricá com contexto suficiente para decidir se vale uma conversa. O CapMar não processa pagamentos: o apoio acontece pelo link que cada projeto informa e pelas mensagens.
           </p>
-        </div>
+          <div><Link href="/home" className="ui-button ui-button-primary">Explorar projetos</Link></div>
+        </section>
 
-        {/* Por que Maricá */}
-        <div className="flex flex-col gap-6">
-          <h2 className="font-heading font-black text-3xl text-primary uppercase tracking-tighter">
-            Por que Maricá?
-          </h2>
-          <p className="text-gray-600 text-base leading-relaxed">
-            Porque é a cidade onde estudamos, onde vivemos e onde vemos todo dia pessoas com
-            capacidade técnica e criativa que não têm para onde ir com suas ideias. Maricá está
-            crescendo rápido — a gente quer que esse crescimento chegue em todo mundo, não só
-            em quem já tem rede de contatos.
+        <section className="grid gap-4" aria-labelledby="por-que-marica">
+          <h2 id="por-que-marica" className={h2}>Por que Maricá?</h2>
+          <p className={body}>
+            Porque é a cidade onde estudamos, vivemos e vemos todo dia pessoas com capacidade técnica e criativa sem para onde levar suas ideias. Maricá está crescendo rápido, e queremos que esse crescimento chegue a todo mundo, não só a quem já tem rede de contatos.
           </p>
-        </div>
+        </section>
 
-        {/* Equipe */}
-        <div className="flex flex-col gap-8">
-          <h2 className="font-heading font-black text-3xl text-primary uppercase tracking-tighter">
-            Quem faz
-          </h2>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            {[
-              { name: "Cristian Barboza", area: "Frontend" },
-              { name: "Endriel Medeiros", area: "Frontend" },
-              { name: "Felipe Sodré",     area: "Backend"  },
-              { name: "Andrey Violante",  area: "Backend"  },
-            ].map((dev) => (
-              <div
-                key={dev.name}
-                className="bg-white rounded-[28px] px-7 py-6 flex items-center gap-4 border border-gray-100"
-              >
-                <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center text-primary font-heading font-black shrink-0">
-                  {dev.name[0]}
-                </div>
+        <section className="grid gap-5" aria-labelledby="quem-faz">
+          <h2 id="quem-faz" className={h2}>Quem faz</h2>
+          <ul className="grid gap-3 sm:grid-cols-2">
+            {team.map((dev, i) => (
+              <li key={dev.name} className="ui-panel flex items-center gap-4 px-5 py-4">
+                <span aria-hidden="true" className={"tile " + ["tile-a", "tile-b", "tile-c", "tile-d"][i] + " grid h-11 w-11 shrink-0 place-items-center rounded-[12px]"}>
+                  <span className="grid h-7 w-7 place-items-center rounded-lg bg-surface font-heading text-sm font-extrabold text-secondary">{dev.name[0]}</span>
+                </span>
                 <div>
-                  <p className="font-semibold text-gray-900">{dev.name}</p>
-                  <p className="text-sm text-gray-400">{dev.area}</p>
+                  <p className="font-semibold text-secondary">{dev.name}</p>
+                  <p className="text-sm text-muted">{dev.area}</p>
                 </div>
-              </div>
+              </li>
             ))}
-          </div>
-          <p className="text-gray-500 text-base leading-relaxed">
-            Projeto de extensão universitária desenvolvido com orientação acadêmica, mas com
-            vontade própria de fazer algo que dure além da faculdade.
+          </ul>
+          <p className={body}>
+            Projeto de extensão universitária desenvolvido com orientação acadêmica, mas com vontade própria de fazer algo que dure além da faculdade.
           </p>
-        </div>
-
+        </section>
       </div>
-
-
     </PublicFrame>
   );
 }

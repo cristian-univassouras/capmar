@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { useState } from "react";
 
 import AuthShell from "@/app/_auth/AuthShell";
-import { Field, SubmitButton } from "@/app/_auth/ui";
+import { Field, FormError, SubmitButton } from "@/app/_auth/ui";
 import { login, saveSession } from "@/lib/api";
 import AuthSwitchLink from "@/app/_auth/AuthSwitchLink";
 import { currentAuthDestination } from "@/lib/auth-navigation";
@@ -14,6 +14,7 @@ export default function LoginPage() {
   const router = useRouter();
   const [useCode,setUseCode]=useState(false);
   const [loading, setLoading] = useState(false);
+  const [done, setDone] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
@@ -29,6 +30,7 @@ export default function LoginPage() {
         otp: String(form.get("otp") || "") || undefined,
       });
       saveSession(auth);
+      setDone(true);
       const safeNext = currentAuthDestination() ?? "/feed";
       router.push(safeNext);
     } catch (err) {
@@ -41,9 +43,8 @@ export default function LoginPage() {
 
   return (
     <AuthShell
-      kicker="Bem-vindo de volta"
       title="Entrar"
-      subtitle="Acesse sua conta para continuar."
+      subtitle="Entre para continuar de onde parou."
       footer={
         <>
           Ainda não tem conta?{" "}
@@ -53,7 +54,7 @@ export default function LoginPage() {
         </>
       }
     >
-      <form onSubmit={handleSubmit} className="flex flex-col gap-5">
+      <form onSubmit={handleSubmit} className="grid gap-5">
         <Field
           id="email"
           name="email"
@@ -73,17 +74,13 @@ export default function LoginPage() {
           required
         />
 
-        <label className="flex items-center gap-2 text-xs text-gray-500"><input type="checkbox" checked={useCode} onChange={e=>setUseCode(e.target.checked)} className="accent-primary"/>Uso um aplicativo autenticador</label>{useCode&&<Field id="otp" name="otp" label="Código do autenticador (se ativado)" inputMode="numeric" pattern="[0-9]{6}" maxLength={6} autoComplete="one-time-code"/>}
-        <Link href="/esqueci-senha" className="text-sm font-semibold text-primary hover:underline">Esqueci minha senha</Link>
+        <label className="flex min-h-11 cursor-pointer items-center gap-3 text-[15px] text-gray-600"><input type="checkbox" checked={useCode} onChange={e=>setUseCode(e.target.checked)} className="h-5 w-5"/>Uso um aplicativo autenticador</label>{useCode&&<Field id="otp" name="otp" label="Código do autenticador (se ativado)" inputMode="numeric" pattern="[0-9]{6}" maxLength={6} autoComplete="one-time-code"/>}
+        <Link href="/esqueci-senha" className="inline-flex min-h-11 items-center justify-self-start text-[15px] font-semibold text-primary hover:underline">Esqueci minha senha</Link>
 
-        {error && (
-          <p role="alert" className="rounded-2xl bg-accent/10 px-4 py-3 text-sm font-medium text-accent">
-            {error}
-          </p>
-        )}
+        <FormError message={error} />
 
         <div className="mt-2">
-          <SubmitButton loading={loading} loadingLabel="Entrando...">
+          <SubmitButton loading={loading} done={done} loadingLabel="Entrando...">
             Entrar
           </SubmitButton>
         </div>

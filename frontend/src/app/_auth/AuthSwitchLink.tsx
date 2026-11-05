@@ -8,5 +8,5 @@ function subscribe(listener: () => void) {
 }
 export default function AuthSwitchLink({ href, children }: { href: "/login" | "/register"; children: React.ReactNode }) {
   const next = useSyncExternalStore(subscribe, currentAuthDestination, () => null);
-  return <Link href={href + (next ? "?next=" + encodeURIComponent(next) : "")} className="font-semibold text-primary hover:underline">{children}</Link>;
+  return <Link href={href + (next ? "?next=" + encodeURIComponent(next) : "")} className="inline-flex min-h-11 items-center font-semibold text-primary hover:underline">{children}</Link>;
 }

@@ -28,3 +28,35 @@ export function displayNameOf(user: { first_name?: string | null; last_name?: st
 export function initialOf(user: Pick<User, "first_name" | "username"> | null): string {
   return (user?.first_name || user?.username || "U")[0].toUpperCase();
 }
+
+export const STATUS_OPTIONS = [
+  { value: "rascunho", label: "Rascunho" },
+  { value: "ativo", label: "Ativo" },
+  { value: "pausado", label: "Pausado" },
+  { value: "concluido", label: "Concluído" },
+] as const;
+
+/** Rótulo em português do status gravado no backend (rascunho, ativo, pausado, concluido). */
+export function statusLabel(status: string): string {
+  return STATUS_OPTIONS.find((option) => option.value === status)?.label ?? status;
+}
+
+/** Classe do selo `ui-badge` para o status. */
+export function statusBadgeClass(status: string): string {
+  return status === "rascunho" ? "ui-badge is-draft" : status === "ativo" ? "ui-badge is-public" : "ui-badge";
+}
+
+/** Azulejo (tile-a..e) estável derivado de um texto, para capas e avatares sem imagem. */
+export function tileClassFor(seed: string): string {
+  let h = 0;
+  for (let i = 0; i < seed.length; i++) h = (h * 31 + seed.charCodeAt(i)) >>> 0;
+  return "tile-" + "abcde"[h % 5];
+}
+
+/** Iniciais (até 2 letras) de um nome, para avatares de equipe. Ignora o prefixo genérico "Equipe", "Time" ou "Grupo". */
+export function initialsOf(name: string): string {
+  const all = name.trim().split(/\s+/).map((word) => word.replace(/^[^\p{L}\p{N}]+/u, "")).filter(Boolean);
+  const words = all.length > 1 && /^(equipe|time|grupo)$/i.test(all[0]) ? all.slice(1) : all;
+  if (words.length === 0) return "?";
+  return (words.length === 1 ? Array.from(words[0]).slice(0, 2).join("") : words[0][0] + words[1][0]).toUpperCase();
+}

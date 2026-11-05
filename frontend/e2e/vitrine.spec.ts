@@ -37,9 +37,11 @@ test("visitante navega, busca e lê projeto e perfil sem login", async ({ page }
   await expect(search.getByLabel("Buscar projetos")).toHaveValue("Feira");
   await search.getByRole("link").filter({ has: page.getByRole("heading", { name: "Feira Criativa de Maricá" }) }).click();
   await expect(page.getByRole("heading", { level: 1, name: "Feira Criativa de Maricá" })).toBeVisible();
-  await expect(page.getByRole("heading", { name: "Comentários", exact: true })).toBeVisible();
-  await expect(page.getByRole("heading", { name: "Equipes", exact: true })).toBeVisible();
-  await expect(page.getByRole("button", { name: "Editar projeto" })).toHaveCount(0);
+  await expect(page.getByRole("tab", { name: /^Comentários/ })).toBeVisible();
+  await page.getByRole("tab", { name: /^Equipe/ }).click();
+  await expect(page).toHaveURL(/#equipe$/);
+  await expect(page.getByRole("tabpanel")).toBeVisible();
+  await expect(page.getByRole("button", { name: "Gerenciar" })).toHaveCount(0);
   await noOverflow(page);
   await page.screenshot({ path: "../docs/thiago/projeto-publico-" + info.project.name + ".png", fullPage: true });
   await page.getByRole("link", { name: /Ana Martins/ }).first().click();
@@ -79,7 +81,8 @@ test("cadastro com imagens e tags, edição, erro de comentário e exclusão", a
     await expect(page.getByRole("link", { name: "#maricá", exact: true })).toBeVisible();
     await page.reload();
     await expect(page.getByRole("link", { name: "#teste", exact: true })).toBeVisible();
-    await page.getByRole("button", { name: "Editar projeto", exact: true }).click();
+    await page.getByRole("button", { name: "Gerenciar", exact: true }).click();
+    await page.getByRole("menuitem", { name: "Editar projeto", exact: true }).click();
     const edit = page.getByRole("form", { name: "Editar projeto" });
     await edit.getByLabel("Palavras-chave", { exact: true }).fill("revisado");
     await edit.getByRole("textbox", { name: "Descrição", exact: true }).fill("");
@@ -99,6 +102,7 @@ test("cadastro com imagens e tags, edição, erro de comentário e exclusão", a
       status: 503, contentType: "application/json", body: JSON.stringify({ detail: "Falha controlada no comentário" }),
       headers: { "Access-Control-Allow-Origin": process.env.E2E_BASE_URL ?? "http://localhost:3000", "Access-Control-Allow-Credentials": "true" },
     }));
+    await page.getByRole("tab", { name: /^Comentários/ }).click();
     await page.getByLabel("Seu comentário").fill("Comentário de teste");
     await page.getByRole("button", { name: "Enviar comentário" }).click();
     await expect(page.getByRole("alert").filter({ hasText: "Falha controlada" })).toBeVisible();
@@ -113,8 +117,9 @@ test("cadastro com imagens e tags, edição, erro de comentário e exclusão", a
     const current = await (await page.request.get(api + "/projects/" + id)).json();
     await page.request.patch(api + "/projects/" + id, { headers, data: { cover_url: null, logo_url: null } });
     for (const url of [current.cover_url, current.logo_url].filter(Boolean)) await page.request.delete(api + url, { headers });
-    page.once("dialog", (dialog) => dialog.accept());
-    await page.getByRole("button", { name: "Excluir projeto", exact: true }).click();
+    await page.getByRole("button", { name: "Gerenciar", exact: true }).click();
+    await page.getByRole("menuitem", { name: "Excluir projeto", exact: true }).click();
+    await page.getByRole("dialog").getByRole("button", { name: "Excluir projeto", exact: true }).click();
     await expect(page).toHaveURL(/\/projetos$/);
     expect((await page.request.get(api + "/projects/" + id)).status()).toBe(404);
     id = null;

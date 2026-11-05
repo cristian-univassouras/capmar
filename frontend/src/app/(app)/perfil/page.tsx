@@ -3,9 +3,11 @@
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
+import { ExternalLink, Pencil, ShieldCheck, FolderKanban } from "lucide-react";
 
 import {
   getMe,
+  getStoredUser,
   listPosts,
   mediaUrl,
   saveUser,
@@ -13,13 +15,17 @@ import {
   type Post,
   type User,
 } from "@/lib/api";
-import { displayNameOf, formatDate, initialOf } from "@/lib/format";
-import { ImagePicker } from "@/app/_components/media";
+import { displayNameOf, formatDate } from "@/lib/format";
+import { Avatar, ImagePicker } from "@/app/_components/media";
+import { useToast } from "@/app/_components/ui/feedback";
+import { EmptyState, ListSkeleton, Skeleton } from "@/app/_components/ui/primitives";
 
 export default function PerfilPage() {
+  const toast = useToast();
   const [user, setUser] = useState<User | null>(null);
   const [posts, setPosts] = useState<Post[]>([]);
   const [loading, setLoading] = useState(true);
+  const [postsLoading, setPostsLoading] = useState(true);
 
   const [editing, setEditing] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -27,17 +33,28 @@ export default function PerfilPage() {
   const [error, setError] = useState<string | null>(null);
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
 
+  // Usa o usuário guardado pela casca (sem nova chamada a /auth/me); só consulta o servidor se não houver cópia.
   useEffect(() => {
-    getMe().then(async (u) => {
-        const p = await listPosts(u.user_id);
-        setUser(u);
-        setAvatarUrl(u.avatar_url);
-        saveUser(u);
-        setPosts(p);
-      })
-      .catch(() => setError("Não foi possível carregar o perfil. Tente novamente."))
-      .finally(() => setLoading(false));
+    let active = true;
+    const sync = () => { const stored = getStoredUser(); if (active && stored) setUser(stored); };
+    sync();
+    window.addEventListener("capmar-user-changed", sync);
+    if (!getStoredUser()) {
+      getMe().then((u) => { if (active) saveUser(u); })
+        .catch(() => { if (active) { setError("Não foi possível carregar o perfil. Tente novamente."); setLoading(false); setPostsLoading(false); } });
+    }
+    return () => { active = false; window.removeEventListener("capmar-user-changed", sync); };
   }, []);
+
+  const uid = user?.user_id;
+  useEffect(() => {
+    if (uid == null) return;
+    let active = true;
+    listPosts(uid).then((p) => { if (active) setPosts(p); })
+      .catch(() => { if (active) setError("Não foi possível carregar suas publicações."); })
+      .finally(() => { if (active) { setLoading(false); setPostsLoading(false); } });
+    return () => { active = false; };
+  }, [uid]);
 
   async function handleSave(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -56,6 +73,7 @@ export default function PerfilPage() {
       setUser(updated);
       saveUser(updated);
       setEditing(false);
+      toast("Perfil atualizado.");
     } catch (err) {
       setError(err instanceof Error ? err.message : "Erro ao salvar.");
     } finally {
@@ -63,151 +81,118 @@ export default function PerfilPage() {
     }
   }
 
-  if (loading) {
+  if (loading && !user && !error) {
     return (
-      <div className="flex justify-center py-20">
-        <span className="h-8 w-8 animate-spin rounded-full border-2 border-primary/30 border-t-primary" />
+      <div className="mx-auto max-w-4xl space-y-6" role="status" aria-busy="true" aria-label="Carregando perfil">
+        <div className="ui-panel overflow-hidden"><Skeleton className="h-24 w-full !rounded-none" /><div className="grid gap-3 p-6"><Skeleton className="h-8 w-56" /><Skeleton className="h-4 w-72" /></div></div>
+        <ListSkeleton rows={2} label="Carregando publicações" />
       </div>
     );
   }
 
   if (!user) {
-    return <div className="text-center py-20 text-gray-500">Sessão não encontrada.</div>;
+    return <div role="alert" className="ui-error mx-auto max-w-4xl">{error ?? "Sessão não encontrada."}</div>;
   }
 
   return (
-    <div className="max-w-4xl mx-auto space-y-6"><div className="ui-page-heading"><div><span className="ui-eyebrow">Minha conta</span><h2 className="mt-2 font-heading text-2xl font-bold text-secondary">Seu espaço na comunidade</h2><p>Apresente quem está por trás das suas ideias.</p></div><Link href={"/usuario/"+user.user_id} className="ui-button">Ver perfil público ↗</Link></div>
+    <div className="mx-auto max-w-4xl space-y-8">
       {/* Cartão do perfil */}
-      <div className="bg-white rounded-2xl border border-gray-100 overflow-hidden">
-        <div className="h-24 bg-gradient-to-r from-primary to-secondary" />
-        <div className="px-6 pb-6">
-          <div className="flex items-end justify-between -mt-12 mb-4">
-            <div className="w-20 h-20 rounded-2xl bg-white border-4 border-white shadow-md overflow-hidden flex items-center justify-center text-primary font-black text-2xl font-heading">
-              {user.avatar_url ? (
-                <img src={mediaUrl(user.avatar_url)} alt={user.username} className="w-full h-full object-cover" />
-              ) : (
-                initialOf(user)
-              )}
-            </div>
+      <section aria-label="Seu perfil" className="ui-panel overflow-hidden">
+        <div className="tile tile-a h-24" aria-hidden="true" />
+        <div className="px-6 pb-7">
+          <div className="-mt-12 mb-4 flex items-end justify-between gap-3">
+            <Avatar user={user} className="h-24 w-24 border-4 border-surface text-3xl" />
             {!editing && (
               <button
                 onClick={() => {
+                  setAvatarUrl(user.avatar_url);
                   setEditing(true);
                   setError(null);
                 }}
-                className="bg-primary text-white text-sm font-semibold px-5 py-2 rounded-xl hover:bg-primary/90 transition-colors"
+                className="ui-button ui-button-primary"
               >
+                <Pencil size={16} aria-hidden="true" />
                 Editar perfil
               </button>
             )}
           </div>
 
-          {editing ? (
-            <form onSubmit={handleSave} className="space-y-4">
-              <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-1.5">Foto de perfil</label>
-                <ImagePicker label="Foto de perfil" value={avatarUrl} onChange={setAvatarUrl} onBusyChange={setUploading} variant="square" />
-              </div>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div key={editing ? "edit" : "view"} className="rise">
+            <h1 className="font-heading text-[30px] font-extrabold leading-tight tracking-tight text-secondary">{displayNameOf(user)}</h1>
+            {editing ? (
+              <form onSubmit={handleSave} className="mt-5 space-y-4" aria-label="Editar perfil">
                 <div>
-                  <label htmlFor="first_name" className="block text-sm font-semibold text-gray-700 mb-1.5">Nome</label>
-                  <input
-                    id="first_name" name="first_name"
-                    defaultValue={user.first_name ?? ""}
-                    maxLength={20}
-                    className="w-full rounded-xl border border-gray-200 px-4 py-2.5 outline-none focus:border-primary focus:ring-2 focus:ring-primary/20"
-                  />
+                  <p className="mb-1.5 text-sm font-semibold text-secondary">Foto de perfil</p>
+                  <ImagePicker label="Foto de perfil" value={avatarUrl} onChange={setAvatarUrl} onBusyChange={setUploading} variant="square" />
                 </div>
-                <div>
-                  <label htmlFor="last_name" className="block text-sm font-semibold text-gray-700 mb-1.5">Sobrenome</label>
-                  <input
-                    id="last_name" name="last_name"
-                    defaultValue={user.last_name ?? ""}
-                    maxLength={100}
-                    className="w-full rounded-xl border border-gray-200 px-4 py-2.5 outline-none focus:border-primary focus:ring-2 focus:ring-primary/20"
-                  />
+                <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                  <div className="ui-field">
+                    <label htmlFor="first_name">Nome</label>
+                    <input id="first_name" name="first_name" defaultValue={user.first_name ?? ""} maxLength={20} />
+                  </div>
+                  <div className="ui-field">
+                    <label htmlFor="last_name">Sobrenome</label>
+                    <input id="last_name" name="last_name" defaultValue={user.last_name ?? ""} maxLength={100} />
+                  </div>
                 </div>
-              </div>
-              <div>
-                <label htmlFor="username" className="block text-sm font-semibold text-gray-700 mb-1.5">Nome de usuário</label>
-                <input
-                  id="username" name="username"
-                  defaultValue={user.username}
-                  minLength={3}
-                  maxLength={20}
-                  required
-                  className="w-full rounded-xl border border-gray-200 px-4 py-2.5 outline-none focus:border-primary focus:ring-2 focus:ring-primary/20"
-                />
-              </div>
-              <div>
-                <label htmlFor="email" className="block text-sm font-semibold text-gray-700 mb-1.5">E-mail</label>
-                <input
-                  id="email" name="email"
-                  type="email"
-                  defaultValue={user.email}
-                  maxLength={50}
-                  required
-                  className="w-full rounded-xl border border-gray-200 px-4 py-2.5 outline-none focus:border-primary focus:ring-2 focus:ring-primary/20"
-                />
-              </div>
+                <div className="ui-field">
+                  <label htmlFor="username">Nome de usuário</label>
+                  <input id="username" name="username" defaultValue={user.username} minLength={3} maxLength={20} required />
+                </div>
+                <div className="ui-field">
+                  <label htmlFor="email">E-mail</label>
+                  <input id="email" name="email" type="email" defaultValue={user.email} maxLength={50} required />
+                </div>
 
-              {error && (
-                <p role="alert" className="rounded-xl bg-accent/10 px-4 py-2.5 text-sm font-medium text-accent">{error}</p>
-              )}
+                {error && <p role="alert" className="ui-error shake">{error}</p>}
 
-              <div className="flex gap-2">
-                <button
-                  type="submit"
-                  disabled={saving || uploading}
-                  className="bg-primary text-white text-sm font-semibold px-6 py-2.5 rounded-xl hover:bg-primary/90 transition-colors disabled:opacity-60"
-                >
-                  {saving ? "Salvando..." : "Salvar"}
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setEditing(false)}
-                  className="text-sm font-semibold text-gray-500 px-4 py-2.5 rounded-xl hover:bg-gray-50 transition-colors"
-                >
-                  Cancelar
-                </button>
-              </div>
-            </form>
-          ) : (
-            <>
-              <h1 className="font-heading font-black text-2xl text-foreground">{displayNameOf(user)}</h1>
-              <p className="text-gray-500 text-sm mt-0.5">
-                @{user.username} · {user.email}
-              </p>
-
-              <div className="flex flex-wrap items-center gap-6 mt-5">
-                <div className="text-center">
-                  <p className="font-heading font-black text-xl text-foreground">{posts.length}</p>
-                  <p className="text-xs text-gray-400">Publicações recentes</p>
-                </div><Link href="/projetos" className="ui-button">Meus projetos</Link><Link href="/seguranca" className="text-sm font-semibold text-primary">Segurança da conta</Link>
-              </div>
-            </>
-          )}
+                <div className="flex flex-wrap gap-2">
+                  <button type="submit" disabled={saving || uploading} aria-busy={saving} className={"ui-button ui-button-primary " + (saving ? "is-loading" : "")}>
+                    Salvar
+                  </button>
+                  <button type="button" onClick={() => setEditing(false)} className="ui-button ui-button-quiet">
+                    Cancelar
+                  </button>
+                </div>
+              </form>
+            ) : (
+              <>
+                <p className="mt-1 text-[15px] text-muted">@{user.username} · {user.email}</p>
+                <p className="mt-4 text-[15px] text-foreground"><strong className="font-heading text-lg font-extrabold text-secondary">{postsLoading ? "–" : posts.length}</strong> {posts.length === 1 ? "publicação recente" : "publicações recentes"}</p>
+                <div className="mt-5 flex flex-wrap items-center gap-2">
+                  <Link href={"/usuario/" + user.user_id} className="ui-button"><ExternalLink size={16} aria-hidden="true" />Ver perfil público</Link>
+                  <Link href="/projetos" className="ui-button"><FolderKanban size={16} aria-hidden="true" />Meus projetos</Link>
+                  <Link href="/seguranca" className="ui-button ui-button-quiet"><ShieldCheck size={16} aria-hidden="true" />Segurança da conta</Link>
+                </div>
+              </>
+            )}
+          </div>
         </div>
-      </div>
+      </section>
 
       {/* Publicações do usuário */}
-      <div className="space-y-3">
-        <h2 className="font-heading font-bold text-lg text-foreground">Minhas publicações</h2>
-        {posts.length === 0 ? (
-          <div className="bg-white rounded-2xl border border-gray-100 p-10 text-center text-gray-500">
-            Você ainda não publicou nada.
-          </div>
+      <section className="space-y-3">
+        <h2 className="font-heading text-xl font-bold text-secondary">Minhas publicações</h2>
+        {error && !editing && <p role="alert" className="ui-error">{error}</p>}
+        {postsLoading ? (
+          <ListSkeleton rows={2} label="Carregando publicações" />
+        ) : posts.length === 0 ? (
+          <EmptyState title="Você ainda não publicou nada" action={<Link href="/feed" className="ui-button ui-button-primary">Escrever uma publicação</Link>}>
+            Compartilhe uma novidade do seu projeto para a comunidade conhecer.
+          </EmptyState>
         ) : (
-          posts.map((post) => (
-            <div key={post.post_id} className="bg-white rounded-2xl border border-gray-100 p-5 space-y-2">
-              <p className="text-xs text-gray-400">{formatDate(post.created_at)}</p>
-              <p className="text-sm text-gray-700 leading-relaxed whitespace-pre-wrap">{post.content}</p>
-              {post.image_url && <img src={mediaUrl(post.image_url)} alt="Imagem da publicação" className="max-h-96 w-full rounded-xl object-contain bg-gray-50"/>}
-              {post.project && <Link href={"/projeto/"+post.project.project_id} className="inline-block rounded-lg bg-primary/5 px-3 py-2 text-xs font-semibold text-primary">↳ {post.project.name}</Link>}
-            </div>
-          ))
+          <div className="stagger grid gap-3">
+            {posts.map((post, i) => (
+              <article key={post.post_id} style={{ ["--i" as string]: Math.min(i, 8) }} className="ui-panel space-y-2 p-5">
+                <p className="text-[13px] text-muted">{formatDate(post.created_at)}</p>
+                <p className="max-w-[70ch] whitespace-pre-wrap break-words text-[15px] leading-relaxed text-foreground">{post.content}</p>
+                {post.image_url && <img src={mediaUrl(post.image_url)} alt="Imagem da publicação" className="max-h-80 w-full rounded-xl bg-surface-2 object-contain" />}
+                {post.project && <Link href={"/projeto/" + post.project.project_id} className="inline-flex min-h-11 items-center rounded-xl bg-primary-soft px-3 text-[14px] font-semibold text-primary-strong">↳ {post.project.name}</Link>}
+              </article>
+            ))}
+          </div>
         )}
-      </div>
+      </section>
     </div>
   );
 }

@@ -23,7 +23,7 @@ test("nomes e avatares abrem perfis no feed, comentários, equipes e chat", asyn
     await expect(page.getByRole("button", { name: "Enviar mensagem", exact: true })).toBeVisible();
   }
 
-  await page.goto("/projeto/1");
+  await page.goto("/projeto/1#comentarios");
   const comment = page.locator("article").filter({ has: page.getByRole("link", { name: /^Ver perfil de/ }) }).first();
   const avatar = comment.getByRole("link", { name: /^Ver perfil de/ }).first();
   const href = await avatar.getAttribute("href");

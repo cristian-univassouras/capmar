@@ -26,13 +26,13 @@ test("paginação administrativa e retomada após exigência de confirmação", 
   expect((await users.locator("tbody tr td:first-child").allTextContents()).every(x=>!initial.includes(x))).toBe(true);
   await pages.getByRole("button",{name:"Anterior"}).click();
   await expect(page.getByText(/registros · página 1/)).toBeVisible();
-  await page.getByRole("button",{name:"Moderação",exact:true}).click();
+  await page.getByRole("tab",{name:"Moderação",exact:true}).click();
   const posts=page.getByRole("table",{name:"Moderação de publicações",exact:true});
   await expect(posts.getByRole("row")).toHaveCount(21);
   await pages.getByRole("button",{name:"Próxima"}).click();
   await expect(page.getByText(/registros · página 2/)).toBeVisible();
   await page.route("**/admin/users?*",r=>r.fulfill({status:403,contentType:"application/json",body:JSON.stringify({detail:"Confirme sua identidade para continuar"})}));
-  await page.getByRole("button",{name:"Usuários",exact:true}).click();
+  await page.getByRole("tab",{name:"Usuários",exact:true}).click();
   await expect(page.getByRole("alert").filter({hasText:"Confirme sua identidade"})).toBeVisible();
   await page.unroute("**/admin/users?*");
   await page.locator("summary").click();
@@ -40,7 +40,7 @@ test("paginação administrativa e retomada após exigência de confirmação", 
   await form.getByLabel("Senha atual",{exact:true}).fill(process.env.E2E_ADMIN_PASSWORD!);
   await form.getByLabel("Código do autenticador",{exact:true}).fill(otp());
   await form.getByRole("button",{name:"Confirmar identidade",exact:true}).click();
-  await expect(page.getByRole("status").filter({hasText:"Operação concluída"})).toBeVisible();
+  await expect(page.getByRole("status").filter({hasText:"Identidade confirmada"})).toBeVisible();
   await expect(users).toBeVisible();
 });
 

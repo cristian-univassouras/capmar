@@ -1,7 +1,100 @@
 import Image from "next/image";
 import Link from "next/link";
-import { ArrowUpRight, MapPin, FolderKanban, MessagesSquare, Layers } from "lucide-react";
-import Navbar from "@/app/_landing/layout/Navbar";
+import { ArrowUpRight, FolderKanban, MessagesSquare, Users } from "lucide-react";
+import PublicHeader from "@/app/_components/PublicHeader";
 import Footer from "@/app/_landing/layout/Footer";
+import FeaturedProjects from "@/app/_landing/FeaturedProjects";
 import CommunityCTA from "@/app/_components/CommunityCTA";
-export default function Home(){return <main className="min-h-screen overflow-x-clip bg-background"><Navbar/><section className="landing-hero"><div className="landing-hero-copy"><p className="mb-6 inline-flex items-center gap-2 rounded-full border border-primary/10 bg-white px-4 py-2 text-xs font-semibold text-primary"><MapPin size={14}/>Feito em Maricá, para Maricá.</p><h1 className="font-heading text-5xl font-black leading-[1.04] tracking-tight text-primary sm:text-6xl lg:text-7xl">A vitrine do<br/>seu projeto.<span className="mt-3 block text-secondary/70">O começo de<br/>novas conexões.</span></h1><p className="mt-7 max-w-lg text-base leading-relaxed text-gray-600">Apresente sua iniciativa, compartilhe o que está construindo e encontre pessoas para fazer acontecer junto com você.</p><div className="mt-8 flex flex-wrap gap-3"><Link href="/home" className="ui-button ui-button-primary">Explorar projetos<ArrowUpRight size={17}/></Link><Link href="/projetos" className="ui-button">Apresentar meu projeto</Link></div><p className="mt-5 text-xs text-gray-500">Conheça as iniciativas da cidade sem precisar criar uma conta.</p></div><div className="landing-illustration"><span className="landing-orbit"/><Image src="/capybara_rocket_space.png" alt="Mascote do CapMar em um foguete, ilustração da marca" width={550} height={550} priority className="relative z-10 h-auto w-full rounded-[32px] object-contain shadow-xl shadow-primary/10"/><div className="landing-note"><span className="h-2 w-2 rounded-full bg-accent"/>Grandes ideias também começam por aqui.</div></div></section><section id="features" className="mx-auto max-w-6xl scroll-mt-24 px-4 py-16 sm:px-6"><div className="ui-page-heading"><div><p className="ui-eyebrow">Como funciona</p><h2 className="mt-3 font-heading text-3xl font-bold tracking-tight text-secondary sm:text-4xl">Da sua ideia para a comunidade.</h2><p>Um espaço para mostrar, desenvolver e conectar projetos locais.</p></div></div><div className="mt-8 grid gap-5 md:grid-cols-3">{[{icon:FolderKanban,n:"01",title:"Apresente seu projeto",text:"Conte a história da sua iniciativa e mostre o que você quer construir."},{icon:Layers,n:"02",title:"Dê forma à sua ideia",text:"Reúna imagens, documentos, vídeos e parcerias em um portfólio."},{icon:MessagesSquare,n:"03",title:"Construa conexões",text:"Troque mensagens, compartilhe atualizações e organize sua equipe."}].map(({icon:Icon,n,title,text})=><article key={n} className="ui-panel p-7"><div className="mb-8 flex items-center justify-between"><Icon size={27} className="text-primary"/><span className="text-xs text-gray-300">{n}</span></div><h3 className="font-heading text-xl font-bold text-secondary">{title}</h3><p className="mt-3 text-sm leading-relaxed text-gray-500">{text}</p></article>)}</div><div className="mt-14"><CommunityCTA/></div></section><Footer/></main>;}
+import { Reveal, TileStrip } from "@/app/_components/ui/primitives";
+
+const steps = [
+  { icon: FolderKanban, tile: "tile-a", title: "Conte a história do projeto", text: "Crie sua conta, escolha um nome e descreva o que você faz ou quer fazer. Capa, imagens e PDFs entram quando você tiver." },
+  { icon: Users, tile: "tile-b", title: "Mostre quem está junto", text: "Monte a equipe, liste parceiros e deixe claro quem responde pelo projeto. Quem apoia quer saber com quem está falando." },
+  { icon: MessagesSquare, tile: "tile-d", title: "Receba contato e apoio", text: "Publique, compartilhe o link ou o QR Code e converse pelas mensagens. Se você aceita apoio, o link de contribuição fica na página do projeto." },
+];
+
+export default function Home() {
+  return (
+    <div className="min-h-screen overflow-x-clip bg-background">
+      <PublicHeader />
+      <main>
+        <section className="mx-auto grid max-w-6xl items-center gap-10 px-4 pb-14 pt-10 sm:px-6 lg:grid-cols-[1.05fr_1fr] lg:gap-14 lg:pb-20 lg:pt-16">
+          <div className="stagger max-w-xl">
+            <h1 style={{ ["--i" as string]: 0 }} className="font-heading text-[44px] font-extrabold leading-[1.02] tracking-[-0.03em] text-secondary sm:text-6xl">
+              A vitrine dos projetos de Maricá.
+            </h1>
+            <p style={{ ["--i" as string]: 1 }} className="mt-6 max-w-[52ch] text-lg text-muted">
+              Veja o que gente da cidade está construindo, ou apresente o seu. Para olhar, não precisa de conta.
+            </p>
+            <div style={{ ["--i" as string]: 2 }} className="mt-8 flex flex-wrap gap-3">
+              <Link href="/home" className="ui-button ui-button-primary !px-6">Explorar projetos<ArrowUpRight size={18} aria-hidden="true" /></Link>
+              <Link href="/projetos" className="ui-button !px-6">Apresentar meu projeto</Link>
+            </div>
+          </div>
+          <div className="rise" style={{ animationDelay: "180ms" }}>
+            <Image
+              src="/capybara.png"
+              alt="Capivara do CapMar sentada na grama, cercada de corações e curtidas"
+              width={2000}
+              height={1116}
+              priority
+              sizes="(min-width: 1024px) 560px, 100vw"
+              className="h-auto w-full rounded-[24px] object-cover"
+            />
+          </div>
+        </section>
+
+        <TileStrip />
+
+        <section aria-labelledby="titulo-projetos" className="mx-auto max-w-6xl px-4 py-16 sm:px-6">
+          <Reveal>
+            <h2 id="titulo-projetos" className="mb-8 max-w-2xl font-heading text-3xl font-extrabold tracking-tight text-secondary sm:text-4xl">Quem já está na vitrine</h2>
+          </Reveal>
+          <Reveal index={1}><FeaturedProjects /></Reveal>
+        </section>
+
+        <section aria-labelledby="titulo-apoiar" className="bg-secondary text-white">
+          <div className="mx-auto grid max-w-6xl gap-10 px-4 py-16 sm:px-6 lg:grid-cols-2 lg:gap-16">
+            <Reveal>
+              <h2 id="titulo-apoiar" className="font-heading text-3xl font-extrabold tracking-tight sm:text-4xl">Quer apoiar um projeto da sua cidade?</h2>
+              <p className="mt-5 max-w-[52ch] text-base text-[#cfe0e6]">Você não precisa de conta para conhecer. Abra um projeto, veja quem faz e decida se quer conversar.</p>
+              <Link href="/home" className="ui-button mt-8 !border-white !bg-white !text-secondary hover:!bg-primary-soft">Ver projetos para apoiar<ArrowUpRight size={18} aria-hidden="true" /></Link>
+            </Reveal>
+            <Reveal index={1}>
+              <dl className="grid gap-6 text-base">
+                <div><dt className="font-heading text-xl font-bold">Veja quem está por trás</dt><dd className="mt-1 text-[#cfe0e6]">Cada projeto mostra a pessoa ou a equipe responsável, o que já existe e os materiais enviados.</dd></div>
+                <div><dt className="font-heading text-xl font-bold">Fale direto com a pessoa</dt><dd className="mt-1 text-[#cfe0e6]">Com uma conta, você manda mensagem pelo perfil de quem criou o projeto.</dd></div>
+                <div><dt className="font-heading text-xl font-bold">Apoie fora da plataforma</dt><dd className="mt-1 text-[#cfe0e6]">O CapMar não processa pagamentos. Quando o projeto aceita apoio, o link informado por ele aparece na página.</dd></div>
+              </dl>
+            </Reveal>
+          </div>
+        </section>
+
+        <section id="como-funciona" aria-labelledby="titulo-como" className="mx-auto grid max-w-6xl gap-10 px-4 py-16 sm:px-6 lg:grid-cols-[1fr_1.6fr] lg:gap-16">
+          <Reveal>
+            <h2 id="titulo-como" className="font-heading text-3xl font-extrabold tracking-tight text-secondary sm:text-4xl">Como funciona para quem cria</h2>
+            <p className="mt-5 max-w-[44ch] text-base text-muted">Três passos, no seu ritmo. Você pode salvar como rascunho e publicar quando estiver pronto.</p>
+          </Reveal>
+          <ol className="grid gap-0 divide-y divide-line border-y border-line">
+            {steps.map(({ icon: Icon, tile, title, text }, i) => (
+              <Reveal as="li" index={i} key={title} className="flex gap-5 py-7">
+                <span className={"tile " + tile + " grid h-14 w-14 shrink-0 place-items-center rounded-[14px]"} aria-hidden="true">
+                  <span className="grid h-9 w-9 place-items-center rounded-[10px] bg-surface text-secondary"><Icon size={20} /></span>
+                </span>
+                <div>
+                  <h3 className="font-heading text-xl font-bold tracking-tight text-secondary">{title}</h3>
+                  <p className="mt-2 max-w-[56ch] text-base text-muted">{text}</p>
+                </div>
+              </Reveal>
+            ))}
+          </ol>
+        </section>
+
+        <section className="mx-auto max-w-6xl px-4 pb-4 sm:px-6">
+          <Reveal><CommunityCTA /></Reveal>
+        </section>
+      </main>
+      <Footer />
+    </div>
+  );
+}

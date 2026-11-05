@@ -1,13 +1,29 @@
 import Link from "next/link";
+import { Logo } from "@/app/_components/ui/Logo";
+import { TileStrip } from "@/app/_components/ui/primitives";
+
+const link = "inline-flex min-h-11 items-center text-[15px] text-gray-600 hover:text-primary hover:underline";
+
 export default function Footer() {
-  return <footer className="relative z-20 border-t border-black/10 px-6 py-10">
-    <div className="mx-auto flex max-w-6xl flex-col justify-between gap-6 sm:flex-row">
-      <div><p className="font-heading text-2xl font-bold">CapMar</p><p className="mt-2 text-sm text-gray-600">Projetos e pessoas que transformam Maricá.</p></div>
-      <nav aria-label="Links do rodapé" className="flex flex-wrap gap-5 text-sm font-semibold">
-        <Link href="/home">Explorar projetos</Link><Link href="/register">Criar conta</Link>
-        <Link href="/login">Entrar</Link><Link href="/ajuda">Central de ajuda</Link><Link href="/sobre">Sobre o CapMar</Link>
-      </nav>
-    </div>
-    <p className="mx-auto mt-8 max-w-6xl text-xs text-gray-600">© {new Date().getFullYear()} CapMar.</p>
-  </footer>;
+  return (
+    <footer className="mt-16">
+      <TileStrip />
+      <div className="mx-auto grid max-w-6xl gap-8 px-4 py-10 sm:px-6 md:grid-cols-[1.4fr_1fr_1fr]">
+        <div>
+          <Logo />
+          <p className="mt-3 max-w-sm text-[15px] text-muted">Feito em Maricá, para Maricá. Um projeto de extensão de estudantes de Engenharia de Software da Universidade de Vassouras, campus Maricá.</p>
+        </div>
+        <nav aria-label="Rodapé: plataforma" className="grid content-start">
+          <Link href="/home" className={link}>Explorar projetos</Link>
+          <Link href="/projetos" className={link}>Apresentar meu projeto</Link>
+          <Link href="/register" className={link}>Criar conta</Link>
+        </nav>
+        <nav aria-label="Rodapé: institucional" className="grid content-start">
+          <Link href="/sobre" className={link}>Sobre o CapMar</Link>
+          <Link href="/ajuda" className={link}>Ajuda</Link>
+          <a href="mailto:capmar.dev@gmail.com" className={link}>capmar.dev@gmail.com</a>
+        </nav>
+      </div>
+    </footer>
+  );
 }

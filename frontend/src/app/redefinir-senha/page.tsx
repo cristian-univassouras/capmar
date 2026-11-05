@@ -2,7 +2,7 @@
 import Link from "next/link";
 import { useState, useSyncExternalStore } from "react";
 import AuthShell from "@/app/_auth/AuthShell";
-import { Field, SubmitButton } from "@/app/_auth/ui";
+import { Field, FormError, SubmitButton } from "@/app/_auth/ui";
 import { clearStoredUser, postJson } from "@/lib/api";
 
 function subscribeLink(change: () => void) {
@@ -29,7 +29,7 @@ export default function ResetPassword() {
     catch (err) { setError(err instanceof Error ? err.message : "Não foi possível redefinir sua senha."); }
     finally { setBusy(false); }
   }
-  return <AuthShell kicker="Uma nova senha" title="Redefinir senha" subtitle="Escolha uma senha segura para sua conta CapMar." footer={<Link href={done ? "/login" : "/esqueci-senha"} className="font-semibold text-primary hover:underline">{done ? "Entrar com a nova senha" : "Solicitar novo link"}</Link>}>
-    {done ? <p role="status" className="rounded-2xl bg-primary/5 p-4 text-primary">Senha redefinida. Suas sessões anteriores foram encerradas. Entre com sua nova senha.</p> : !validLink ? <p role="alert" className="rounded-2xl bg-primary/5 p-4 text-primary">Link inválido ou ausente. Solicite um novo link para redefinir sua senha.</p> : <form onSubmit={submit} className="space-y-5"><Field id="password" name="password" type="password" label="Nova senha" minLength={12} maxLength={72} autoComplete="new-password" required /><p className="text-xs text-gray-600">Use pelo menos 12 caracteres e uma senha exclusiva para esta conta.</p><Field id="confirm" name="confirm" type="password" label="Confirmar nova senha" minLength={12} maxLength={72} autoComplete="new-password" required /><Field id="otp" name="otp" label="Código do autenticador (se ativado)" inputMode="numeric" pattern="[0-9]{6}" maxLength={6} autoComplete="one-time-code" />{error && <p role="alert" className="rounded-xl bg-red-50 p-3 text-red-700">{error}</p>}<SubmitButton loading={busy} loadingLabel="Salvando...">Redefinir senha</SubmitButton></form>}
+  return <AuthShell title="Redefinir senha" subtitle="Escolha uma senha segura para sua conta CapMar." footer={<Link href={done ? "/login" : "/esqueci-senha"} className="inline-flex min-h-11 items-center font-semibold text-primary hover:underline">{done ? "Entrar com a nova senha" : "Solicitar novo link"}</Link>}>
+    {done ? <p role="status" className="ui-notice">Senha redefinida. Suas sessões anteriores foram encerradas. Entre com sua nova senha.</p> : !validLink ? <p role="alert" className="ui-error">Link inválido ou ausente. Solicite um novo link para redefinir sua senha.</p> : <form onSubmit={submit} className="grid gap-5"><Field id="password" name="password" type="password" label="Nova senha" minLength={12} maxLength={72} autoComplete="new-password" required /><p className="text-sm text-gray-600">Use pelo menos 12 caracteres e uma senha exclusiva para esta conta.</p><Field id="confirm" name="confirm" type="password" label="Confirmar nova senha" minLength={12} maxLength={72} autoComplete="new-password" required /><Field id="otp" name="otp" label="Código do autenticador (se ativado)" inputMode="numeric" pattern="[0-9]{6}" maxLength={6} autoComplete="one-time-code" /><FormError message={error || null} /><SubmitButton loading={busy} loadingLabel="Salvando...">Redefinir senha</SubmitButton></form>}
   </AuthShell>;
 }

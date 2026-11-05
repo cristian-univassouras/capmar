@@ -24,9 +24,10 @@ test("perfil, publicação, gestão de equipe, segurança e saída funcionam pel
     await page.getByLabel("Texto da publicação").fill(content);
     await page.getByLabel("Projeto da publicação").selectOption(String(project.project_id));
     await page.getByRole("button", { name: "Publicar", exact: true }).click();
-    const post = page.locator("div.bg-white").filter({ has: page.getByText(content, { exact: true }) }).last();
+    const post = page.locator("article").filter({ has: page.getByText(content, { exact: true }) }).last();
     await expect(page.getByText(content, { exact: true })).toBeVisible();
     await post.getByRole("button", { name: /Excluir/ }).click();
+    await page.getByRole("dialog").getByRole("button", { name: "Excluir", exact: true }).click();
     await expect(page.getByText(content, { exact: true })).toHaveCount(0);
     await page.goto("/equipes"); await page.getByRole("button", { name: "+ Nova equipe", exact: true }).click();
     await page.getByLabel("Nome da equipe", { exact: true }).fill(teamName);
@@ -48,10 +49,11 @@ test("perfil, publicação, gestão de equipe, segurança e saída funcionam pel
     const team = (await (await page.request.get(api + "/teams?project_id=" + project.project_id)).json())[0];
     await page.goto("/equipe/" + team.team_id);
     await page.getByRole("button", { name: "Remover", exact: true }).click();
+    await page.getByRole("dialog").getByRole("button", { name: "Remover da equipe", exact: true }).click();
     await expect(page.getByRole("button", { name: "Remover", exact: true })).toHaveCount(0);
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1)).toBe(true);
-    page.once("dialog", (dialog) => dialog.accept());
     await page.getByRole("button", { name: "Excluir", exact: true }).click();
+    await page.getByRole("dialog").getByRole("button", { name: "Excluir equipe", exact: true }).click();
     await expect(page).toHaveURL(/\/equipes$/);
     await page.goto("/seguranca");
     await expect(page.getByRole("heading", { level: 1 })).toBeVisible();

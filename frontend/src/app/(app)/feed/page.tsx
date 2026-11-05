@@ -2,7 +2,8 @@
 import ProfileLink from "@/app/_components/ProfileLink";
 
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
+import { Trash2, X } from "lucide-react";
 
 import {
   createPost,
@@ -17,8 +18,12 @@ import {
 } from "@/lib/api";
 import { displayNameOf, formatDate } from "@/lib/format";
 import { Avatar, ImagePicker } from "@/app/_components/media";
+import { useConfirm, useToast } from "@/app/_components/ui/feedback";
+import { EmptyState, ListSkeleton } from "@/app/_components/ui/primitives";
 
 export default function FeedPage() {
+  const toast = useToast();
+  const confirm = useConfirm();
   const [me, setMe] = useState<User | null>(null);
   const [posts, setPosts] = useState<Post[]>([]);
   const [projects, setProjects] = useState<Project[]>([]);
@@ -28,9 +33,13 @@ export default function FeedPage() {
   const [content, setContent] = useState("");
   const [projectId, setProjectId] = useState("");
   const [imageUrl, setImageUrl] = useState<string | null>(null);
+  const [focused, setFocused] = useState(false);
   const [posting, setPosting] = useState(false);
+  const [posted, setPosted] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [deleting, setDeleting] = useState<number | null>(null);
+  const textarea = useRef<HTMLTextAreaElement>(null);
+  const expanded = focused || posting || posted || content.length > 0 || imageUrl !== null;
 
   useEffect(() => {
     Promise.all([listPosts(), searchProjects({ writable_only: true, limit: 100 })])
@@ -58,8 +67,14 @@ export default function FeedPage() {
       setContent("");
       setProjectId("");
       setImageUrl(null);
+      setFocused(false);
+      setPosted(true);
+      window.setTimeout(() => setPosted(false), 1400);
+      toast("Publicação enviada.");
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Erro ao publicar.");
+      const message = err instanceof Error ? err.message : "Erro ao publicar.";
+      setError(message);
+      toast(message, "error");
     } finally {
       setPosting(false);
     }
@@ -67,137 +82,159 @@ export default function FeedPage() {
 
   async function handleDelete(id: number) {
     if (deleting !== null) return;
+    const ok = await confirm({
+      title: "Excluir esta publicação?",
+      message: "Ela some do seu perfil e da comunidade. Não dá para desfazer.",
+      confirmLabel: "Excluir",
+      danger: true,
+    });
+    if (!ok) return;
     setDeleting(id);
     setError(null);
     try {
       await deletePost(id);
       setPosts((p) => p.filter((post) => post.post_id !== id));
+      toast("Publicação excluída.");
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Erro ao excluir publicação.");
+      const message = err instanceof Error ? err.message : "Erro ao excluir publicação.";
+      setError(message);
+      toast(message, "error");
     } finally {
       setDeleting(null);
     }
   }
 
   return (
-    <div className="max-w-3xl mx-auto space-y-6"><div className="ui-page-heading"><div><h1>Publicações</h1><p>Novidades, ideias e próximos passos dos projetos da comunidade.</p></div></div>
-      {/* Criar publicação */}
-      <form onSubmit={handlePublish} className="bg-white rounded-2xl border border-gray-100 p-4 flex gap-3">
-        <ProfileLink user={me}><Avatar user={me} className="w-9 h-9 text-sm" /></ProfileLink>
+    <div className="mx-auto max-w-3xl space-y-6">
+      <div className="ui-page-heading"><div><h1>Publicações</h1><p>Novidades, ideias e próximos passos dos projetos da comunidade.</p></div></div>
+      {/* Criar publicação: compacto até receber foco */}
+      <form
+        onSubmit={handlePublish}
+        onFocus={() => setFocused(true)}
+        onBlur={(e) => { if (!e.currentTarget.contains(e.relatedTarget as Node | null)) setFocused(false); }}
+        className="ui-panel flex gap-3 p-4"
+      >
+        <ProfileLink user={me}><Avatar user={me} className="h-10 w-10 text-sm" /></ProfileLink>
         <div className="min-w-0 flex-1">
           <textarea
+            ref={textarea}
             value={content}
             onChange={(e) => setContent(e.target.value)}
-            rows={2}
+            rows={expanded ? 3 : 1}
             maxLength={5000}
             aria-label="Texto da publicação"
-            placeholder="Compartilhe uma atualização do seu projeto..."
-            className="w-full bg-gray-50 rounded-xl px-4 py-3 text-sm text-gray-700 placeholder-gray-400 outline-none focus:ring-2 focus:ring-primary/20 resize-none"
+            placeholder="Conte uma novidade..."
+            className="ui-input resize-none"
+            style={{ minHeight: expanded ? 96 : 46 }}
           />
 
-          {imageUrl ? (
-            <div className="relative mt-3 rounded-xl overflow-hidden border border-gray-100">
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src={mediaUrl(imageUrl)} alt="" className="w-full max-h-64 object-cover" />
-              <button
-                type="button"
-                onClick={() => setImageUrl(null)}
-                className="absolute top-2 right-2 bg-black/50 text-white rounded-full w-7 h-7 flex items-center justify-center hover:bg-black/70"
-              >
-                ✕
-              </button>
-            </div>
-          ) : (
-            <div className="mt-3">
-              <ImagePicker variant="compact" value={null} onChange={setImageUrl} onBusyChange={setUploading} hint="Adicione uma foto (opcional)" />
+          {expanded && (
+            <div className="rise">
+              {imageUrl && (
+                <div className="relative mt-3 overflow-hidden rounded-xl border border-line">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img src={mediaUrl(imageUrl)} alt="Prévia da imagem da publicação" className="max-h-64 w-full object-cover" />
+                  <button
+                    type="button"
+                    onClick={() => setImageUrl(null)}
+                    aria-label="Remover imagem da publicação"
+                    className="absolute right-2 top-2 inline-flex h-11 w-11 items-center justify-center rounded-full bg-secondary/75 text-white hover:bg-secondary"
+                  >
+                    <X size={18} aria-hidden="true" />
+                  </button>
+                </div>
+              )}
+              <div className="mt-3 flex flex-wrap items-center gap-2">
+                {!imageUrl && <ImagePicker variant="compact" value={null} onChange={setImageUrl} onBusyChange={setUploading} hint="Adicione uma foto (opcional)" />}
+                <select
+                  value={projectId}
+                  onChange={(e) => setProjectId(e.target.value)}
+                  aria-label="Projeto da publicação"
+                  className="ui-input"
+                  style={{ width: "auto", maxWidth: "100%", fontSize: 14 }}
+                >
+                  <option value="">Sem projeto vinculado</option>
+                  {projects.map((p) => (
+                    <option key={p.project_id} value={p.project_id}>
+                      {p.name}
+                    </option>
+                  ))}
+                </select>
+                <button
+                  type="submit"
+                  disabled={posting || uploading || !content.trim()}
+                  aria-busy={posting}
+                  className={"ui-button ui-button-primary ml-auto " + (posting ? "is-loading" : posted ? "is-done" : "")}
+                >
+                  {uploading ? "Enviando imagem..." : posted ? "Publicado" : "Publicar"}
+                </button>
+              </div>
             </div>
           )}
-
-          <div className="flex flex-wrap items-center gap-2 mt-3">
-            <select
-              value={projectId}
-              onChange={(e) => setProjectId(e.target.value)}
-              aria-label="Projeto da publicação"
-              className="min-w-0 max-w-full text-xs font-medium text-gray-500 bg-gray-50 border border-gray-100 rounded-xl px-3 py-1.5 outline-none focus:ring-2 focus:ring-primary/20"
-            >
-              <option value="">Sem projeto vinculado</option>
-              {projects.map((p) => (
-                <option key={p.project_id} value={p.project_id}>
-                  {p.name}
-                </option>
-              ))}
-            </select>
-            <button
-              type="submit"
-              disabled={posting || uploading || !content.trim()}
-              className="ui-button ui-button-primary ml-auto"
-            >
-              {posting ? "Publicando..." : uploading ? "Enviando imagem..." : "Publicar"}
-            </button>
-          </div>
         </div>
       </form>
 
-      {error && <div role="alert" className="rounded-xl bg-red-50 p-4 text-red-700">{error}</div>}
+      {error && <div role="alert" className="ui-error">{error}</div>}
       {/* Lista */}
       {loading ? (
-        <div className="flex justify-center py-16">
-          <span className="h-8 w-8 animate-spin rounded-full border-2 border-primary/30 border-t-primary" />
-        </div>
+        <ListSkeleton rows={3} label="Carregando publicações" />
       ) : posts.length === 0 ? (
-        <div className="bg-white rounded-2xl border border-gray-100 p-12 text-center text-gray-500">
-          Nenhuma publicação ainda. Seja o primeiro a publicar!
-        </div>
+        <EmptyState
+          title="Ainda não há publicações"
+          action={<button type="button" className="ui-button ui-button-primary" onClick={() => textarea.current?.focus()}>Escrever a primeira</button>}
+        >
+          Conte uma novidade, um passo concluído ou uma ajuda que você procura. É assim que a comunidade conhece seu projeto.
+        </EmptyState>
       ) : (
-        posts.map((post) => (
-          <div key={post.post_id} className="bg-white rounded-2xl border border-gray-100 p-5 space-y-4">
-            <div className="flex items-center gap-3">
-              <ProfileLink user={post.author} userId={post.user_id}><Avatar user={post.author} className="w-10 h-10 text-sm" /></ProfileLink>
-              <div className="flex-1 min-w-0">
-                <p className="font-semibold text-sm text-gray-800"><ProfileLink user={post.author} userId={post.user_id}>{displayNameOf(post.author)}</ProfileLink></p>
-                <p className="text-xs text-gray-400">
-                  {post.author && <><ProfileLink user={post.author}>@{post.author.username}</ProfileLink>{" · "}</>}
-                  {formatDate(post.created_at)}
-                </p>
+        <div className="stagger grid gap-4">
+          {posts.map((post, i) => (
+            <article key={post.post_id} style={{ ["--i" as string]: Math.min(i, 8) }} className="ui-panel space-y-4 p-5">
+              <div className="flex items-center gap-3">
+                <ProfileLink user={post.author} userId={post.user_id}><Avatar user={post.author} className="h-11 w-11 text-sm" /></ProfileLink>
+                <div className="flex min-w-0 flex-1 flex-wrap items-center gap-x-2">
+                  <ProfileLink user={post.author} userId={post.user_id} className="inline-flex min-h-11 items-center text-[15px] font-semibold text-secondary">{displayNameOf(post.author)}</ProfileLink>
+                  {post.author && <ProfileLink user={post.author} className="inline-flex min-h-11 items-center text-[13px] text-muted">@{post.author.username}</ProfileLink>}
+                  <span className="text-[13px] text-muted">· {formatDate(post.created_at)}</span>
+                </div>
+                {me?.user_id === post.user_id && (
+                  <button
+                    onClick={() => handleDelete(post.post_id)}
+                    aria-label="Excluir publicação"
+                    disabled={deleting !== null}
+                    className="ui-button ui-button-quiet !px-3 !text-[14px] !text-muted hover:!bg-danger-soft hover:!text-danger"
+                  >
+                    <Trash2 size={16} aria-hidden="true" />
+                    <span>Excluir</span>
+                  </button>
+                )}
               </div>
-              {me?.user_id === post.user_id && (
-                <button
-                  onClick={() => handleDelete(post.post_id)}
-                  title="Excluir"
-                  aria-label="Excluir publicação"
-                  disabled={deleting !== null}
-                  className="text-gray-500 hover:text-accent transition-colors p-3 disabled:opacity-50"
-                >
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
-                </button>
+
+              <p className="max-w-[70ch] whitespace-pre-wrap break-words text-[15px] leading-relaxed text-foreground">{post.content}</p>
+
+              {post.image_url && (
+                <div className="overflow-hidden rounded-xl border border-line bg-surface-2">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img src={mediaUrl(post.image_url)} alt="Imagem da publicação" className="max-h-80 w-full object-contain" />
+                </div>
               )}
-            </div>
 
-            <p className="break-words text-sm text-gray-700 leading-relaxed whitespace-pre-wrap">{post.content}</p>
-
-            {post.image_url && (
-              <div className="rounded-xl overflow-hidden border border-gray-100">
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img src={mediaUrl(post.image_url)} alt="Imagem da publicação" className="w-full max-h-96 object-contain bg-gray-50" />
-              </div>
-            )}
-
-            {post.project && (
-              <Link
-                href={`/projeto/${post.project.project_id}`}
-                className="border border-gray-100 rounded-xl p-3 flex items-center gap-3 bg-gray-50 hover:border-primary/30 transition-colors"
-              >
-                <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center text-primary font-heading font-black text-xs shrink-0">
-                  {post.project.name.slice(0, 2).toUpperCase()}
-                </div>
-                <div>
-                  <p className="text-xs text-gray-400 font-medium">Projeto</p>
-                  <p className="font-semibold text-sm text-primary">{post.project.name}</p>
-                </div>
-              </Link>
-            )}
-          </div>
-        ))
+              {post.project && (
+                <Link
+                  href={`/projeto/${post.project.project_id}`}
+                  className="flex min-h-11 items-center gap-3 rounded-xl border border-line bg-surface-2 p-3 transition-colors hover:border-primary hover:bg-primary-soft"
+                >
+                  <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-primary-soft font-heading text-[13px] font-extrabold text-primary-strong">
+                    {post.project.name.slice(0, 2).toUpperCase()}
+                  </div>
+                  <div className="min-w-0">
+                    <p className="text-[13px] font-medium text-muted">Projeto</p>
+                    <p className="truncate text-[15px] font-semibold text-primary-strong">{post.project.name}</p>
+                  </div>
+                </Link>
+              )}
+            </article>
+          ))}
+        </div>
       )}
     </div>
   );

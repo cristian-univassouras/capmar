@@ -4,7 +4,7 @@ import { useRouter } from "next/navigation";
 import { useState } from "react";
 
 import AuthShell from "@/app/_auth/AuthShell";
-import { Field, SubmitButton } from "@/app/_auth/ui";
+import { Field, FormError, SubmitButton } from "@/app/_auth/ui";
 import { register, saveSession } from "@/lib/api";
 import AuthSwitchLink from "@/app/_auth/AuthSwitchLink";
 import { currentAuthDestination } from "@/lib/auth-navigation";
@@ -12,6 +12,7 @@ import { currentAuthDestination } from "@/lib/auth-navigation";
 export default function RegisterPage() {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
+  const [done, setDone] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
@@ -37,6 +38,7 @@ export default function RegisterPage() {
         password,
       });
       saveSession(auth);
+      setDone(true);
       const safeNext = currentAuthDestination() ?? "/feed";
       router.push(safeNext);
     } catch (err) {
@@ -47,7 +49,6 @@ export default function RegisterPage() {
 
   return (
     <AuthShell
-      kicker="Vamos começar"
       title="Criar conta"
       subtitle="Crie seu perfil e comece a mostrar seus projetos."
       footer={
@@ -59,7 +60,7 @@ export default function RegisterPage() {
         </>
       }
     >
-      <form onSubmit={handleSubmit} className="flex flex-col gap-5">
+      <form onSubmit={handleSubmit} className="grid gap-5">
         <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
           <Field
             id="first_name"
@@ -124,14 +125,10 @@ export default function RegisterPage() {
           required
         />
 
-        {error && (
-          <p role="alert" className="rounded-2xl bg-accent/10 px-4 py-3 text-sm font-medium text-accent">
-            {error}
-          </p>
-        )}
+        <FormError message={error} />
 
         <div className="mt-2">
-          <SubmitButton loading={loading} loadingLabel="Criando conta...">
+          <SubmitButton loading={loading} done={done} loadingLabel="Criando conta...">
             Criar conta
           </SubmitButton>
         </div>

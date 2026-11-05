@@ -2,12 +2,15 @@
 import { Suspense, useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
-import { ApiError, getUser, getOptionalMe, type Author, type User } from "@/lib/api";
+import { MessageCircle } from "lucide-react";
+import { ApiError, getUser, getStoredUser, type Author, type User } from "@/lib/api";
 import { createDirectConversation } from "@/lib/engagement";
 import { displayNameOf } from "@/lib/format";
 import { Avatar } from "@/app/_components/media";
 import PublicFrame from "@/app/_components/PublicFrame";
 import ProjectBrowser from "@/app/_components/ProjectBrowser";
+import { setShellCrumb } from "@/app/(app)/AppShell";
+import { ProjectGridSkeleton, Skeleton } from "@/app/_components/ui/primitives";
 import { useSessionRevision } from "@/lib/use-session-revision";
 
 export default function PublicProfile() {
@@ -24,12 +27,20 @@ export default function PublicProfile() {
   const key = id + ":" + attempt + ":" + sessionRevision;
   useEffect(() => {
     let active = true;
-    getOptionalMe().then((value) => { if (active) setMe(value); }).catch(() => {});
+    // A identidade vem da cópia guardada (o PublicFrame já confirma a sessão), sem outra chamada a /auth/me.
+    const syncMe = () => { if (active) setMe(getStoredUser()); };
+    syncMe();
+    window.addEventListener("capmar-user-changed", syncMe);
     getUser(Number(id)).then((value) => { if (active) { setUser(value); setError(""); } })
       .catch((err) => { if (active) { setUser(null); setError(err instanceof ApiError && err.status === 404 ? "Perfil não encontrado." : "Não foi possível carregar o perfil."); } })
       .finally(() => { if (active) setLoaded(key); });
-    return () => { active = false; };
+    return () => { active = false; window.removeEventListener("capmar-user-changed", syncMe); };
   }, [id, attempt, key]);
+  const handle = user?.username;
+  useEffect(() => {
+    setShellCrumb(handle ? "Perfil de @" + handle : null);
+    return () => setShellCrumb(null);
+  }, [handle]);
   async function startChat() {
     setSending(true); setChatError("");
     try {
@@ -41,12 +52,19 @@ export default function PublicProfile() {
     } finally { setSending(false); }
   }
   return <PublicFrame>
-    <Link href="/home" className="text-primary">← Explorar projetos</Link>
-    {loaded !== key ? <p role="status">Carregando perfil...</p> : user ? <>
-      <section className="flex flex-wrap items-center gap-4 rounded-2xl bg-white p-6"><Avatar user={user} className="h-20 w-20 text-2xl" /><div className="min-w-0"><h1 className="break-words font-heading text-3xl font-bold">{displayNameOf(user)}</h1><p>@{user.username}</p></div>{me?.user_id !== user.user_id && <button disabled={sending} onClick={startChat} className="rounded-xl bg-primary px-5 py-3 text-white disabled:opacity-50">{sending ? "Abrindo conversa..." : "Enviar mensagem"}</button>}</section>
-      {chatError && <p role="alert" className="rounded-xl bg-red-50 p-3 text-red-700">{chatError}</p>}
-      <h2 className="text-2xl font-bold">Projetos públicos</h2>
-      <Suspense fallback={<p role="status">Carregando projetos...</p>}><ProjectBrowser publicOnly ownerId={user.user_id} /></Suspense>
-    </> : <div role="alert"><p>{error}</p><button className="mt-3 underline" onClick={() => setAttempt((n) => n + 1)}>Tentar novamente</button></div>}
+    <Link href="/home" className="inline-flex min-h-11 items-center text-[15px] font-semibold text-primary hover:underline">← Explorar projetos</Link>
+    {loaded !== key ? <div role="status" aria-busy="true" aria-label="Carregando perfil" className="grid gap-6"><div className="ui-panel flex items-center gap-4 p-6"><Skeleton className="h-20 w-20 !rounded-full" /><div className="grid gap-2"><Skeleton className="h-7 w-56" /><Skeleton className="h-4 w-28" /></div></div><ProjectGridSkeleton count={3} /></div> : user ? <>
+      <section className="ui-panel overflow-hidden">
+        <div className="tile tile-b h-16" aria-hidden="true" />
+        <div className="flex flex-wrap items-end gap-4 px-6 pb-6">
+          <Avatar user={user} className="-mt-10 h-20 w-20 border-4 border-surface text-2xl" />
+          <div className="min-w-0 flex-1 pt-3"><h1 className="break-words font-heading text-3xl font-extrabold tracking-tight text-secondary">{displayNameOf(user)}</h1><p className="text-[15px] text-muted">@{user.username}</p></div>
+          {me?.user_id !== user.user_id && <button disabled={sending} onClick={startChat} aria-busy={sending} className="ui-button ui-button-primary"><MessageCircle size={18} aria-hidden="true" />{sending ? "Abrindo conversa..." : "Enviar mensagem"}</button>}
+        </div>
+      </section>
+      {chatError && <p role="alert" className="ui-error shake">{chatError}</p>}
+      <h2 className="font-heading text-2xl font-bold text-secondary">Projetos públicos</h2>
+      <Suspense fallback={<ProjectGridSkeleton count={3} />}><ProjectBrowser publicOnly ownerId={user.user_id} /></Suspense>
+    </> : <div role="alert" className="ui-panel grid justify-items-start gap-3 p-6"><p className="text-[15px]">{error}</p><button className="ui-button" onClick={() => setAttempt((n) => n + 1)}>Tentar novamente</button></div>}
   </PublicFrame>;
 }

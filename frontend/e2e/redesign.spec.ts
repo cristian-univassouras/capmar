@@ -33,6 +33,7 @@ test("nova conversa, busca local, teclado e navegação de segurança",async({pa
   await page.locator("summary").filter({hasText:"Autenticador em duas etapas"}).click();
   await expect(page.getByRole("button",{name:"Configurar autenticador",exact:true})).toBeVisible();
   expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+1)).toBe(true);
+  await page.goto("/feed");
   const search=page.getByRole("search");
   await search.getByRole("textbox",{name:"Buscar projetos"}).fill("Feira Criativa");
   await search.getByRole("button",{name:"Buscar",exact:true}).click();

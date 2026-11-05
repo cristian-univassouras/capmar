@@ -40,7 +40,7 @@ test("cadastro, alteração de senha e ativação do autenticador completam o fl
   await expect(page).toHaveURL(/\/feed$/);
   await page.goto("/seguranca");
   await page.locator("summary").filter({hasText:"Autenticador em duas etapas"}).click();
-  const setup = page.locator("section").filter({ has: page.getByRole("heading", { name: "Autenticador em duas etapas" }) });
+  const setup = page.locator("details").filter({ has: page.locator("summary").filter({ hasText: "Autenticador em duas etapas" }) });
   await setup.getByLabel("Senha atual", { exact: true }).fill("Capmar-Alterada@123");
   await setup.getByRole("button", { name: "Configurar autenticador" }).click();
   const secret = (await setup.locator("code").innerText()).trim();
@@ -55,5 +55,5 @@ test("cadastro, alteração de senha e ativação do autenticador completam o fl
   await expect(page).toHaveURL(/\/feed$/);
   await page.goto("/seguranca");
   await page.locator("summary").filter({hasText:"Autenticador em duas etapas"}).click();
-  await expect(page.getByText("MFA está ativo. O login exige senha e código do autenticador.")).toBeVisible();
+  await expect(page.getByText("A verificação em duas etapas está ativa. O login exige senha e código do autenticador.")).toBeVisible();
 });

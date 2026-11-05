@@ -1,5 +1,11 @@
 "use client";
 import Link from "next/link";
+import { EmptyState } from "@/app/_components/ui/primitives";
+
 export default function ProjectError({ reset }: { reset: () => void }) {
-  return <main className="mx-auto max-w-xl space-y-4 p-8"><h1 className="text-2xl font-bold">Não foi possível carregar o projeto</h1><p>O servidor pode estar indisponível. Tente novamente em instantes.</p><button onClick={reset} className="rounded-xl bg-primary px-5 py-3 text-white">Tentar novamente</button><Link href="/home" className="block text-primary underline">Voltar à vitrine</Link></main>;
+  return <main className="mx-auto max-w-xl px-4 py-12">
+    <EmptyState title="Não foi possível carregar o projeto" action={<div className="flex flex-wrap justify-center gap-3"><button onClick={reset} className="ui-button ui-button-primary">Tentar novamente</button><Link href="/home" className="ui-button">Voltar à vitrine</Link></div>}>
+      O servidor pode estar indisponível. Tente novamente em instantes.
+    </EmptyState>
+  </main>;
 }

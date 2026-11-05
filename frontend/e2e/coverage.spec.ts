@@ -26,7 +26,7 @@ test("paginação de projetos e comentários preserva todos os resultados", asyn
   await expect(pages.getByRole("button", { name: "Próxima" })).toBeDisabled();
   await pages.getByRole("button", { name: "Anterior" }).click();
   await expect(page).toHaveURL(/page=2/);
-  await page.goto("/projeto/" + fixture.projects[0]);
+  await page.goto("/projeto/" + fixture.projects[0] + "#comentarios");
   await expect(page.getByText(/^QA comentário/)).toHaveCount(20);
   await page.getByRole("button", { name: "Carregar mais comentários" }).click();
   await expect(page.getByText(/^QA comentário/)).toHaveCount(40);
@@ -49,9 +49,9 @@ test("chat carrega históricos extensos e permite repetir envio após falha sem 
   await room.getByRole("textbox", { name: "Mensagem", exact: true }).fill(text);
   await room.getByRole("button", { name: "Enviar mensagem" }).click();
   await expect(room.getByRole("alert")).toBeVisible();
-  await expect(room.getByRole("textbox", { name: "Mensagem", exact: true })).toHaveValue(text);
+  await expect(room.getByText(text, { exact: true })).toHaveCount(1);
   await page.unroute("**/chat/conversations/*/messages");
-  await room.getByRole("button", { name: "Enviar mensagem" }).click();
+  await room.getByRole("button", { name: "Tentar de novo" }).click();
   await expect(room.getByText(text, { exact: true })).toHaveCount(1);
 });
 
@@ -63,7 +63,7 @@ test("logout em outra aba remove projeto privado e sessão interna", async ({ pa
   if (!await other.getByRole("button", { name: "Sair", exact: true }).isVisible()) await other.getByRole("button", { name: "Mais", exact: true }).click();
   await other.getByRole("button", { name: "Sair", exact: true }).click();
   await expect(page.getByRole("heading", { name: "Projeto não encontrado ou sem acesso" })).toBeVisible();
-  await expect(page.getByRole("button", { name: "Editar projeto" })).toHaveCount(0);
+  await expect(page.getByRole("button", { name: "Gerenciar" })).toHaveCount(0);
 });
 
 test("upload com falha mantém formulário e permite novo envio; link ausente não pede senha", async ({ page }) => {

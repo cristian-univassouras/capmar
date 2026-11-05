@@ -127,7 +127,7 @@ test("SEO inicial, apoio, autoria e transição público/privado", async ({ page
     expect(preview.status()).toBe(200); expect(preview.headers()["content-type"]).toContain("image/png");
     await page.goto("/projeto/" + id);
     await expect(page.getByText("Projeto em grupo", { exact: true })).toBeVisible();
-    await expect(page.getByRole("link", { name: "Abrir página de apoio" })).toHaveAttribute("href", "https://example.com/apoio");
+    await expect(page.getByRole("link", { name: "Apoiar este projeto" })).toHaveAttribute("href", "https://example.com/apoio");
     await noOverflow(page);
     expect((await page.request.patch(api + "/projects/" + id, { headers, data: { visibility: false } })).status()).toBe(200);
     const privateHtml = await (await page.request.get("/projeto/" + id)).text();
@@ -169,25 +169,27 @@ test("administrador com MFA modera e registra ações; painel funciona no celula
   await userRow.getByRole("button", { name: "Gerenciar conta" }).click();
   await userRow.getByLabel("Conta ativa").uncheck();
   await userForm.getByLabel("Motivo").fill("Teste de suspensão administrativa");
-  await userForm.getByRole("button", { name: "Salvar usuário" }).click();
+  await userForm.getByRole("button", { name: /Salvar usuário|Revisar e salvar/ }).click();
+  await page.getByRole("dialog").getByRole("button", { name: "Suspender conta", exact: true }).click();
   await expect(userRow.getByLabel("Conta ativa")).not.toBeChecked();
   await userRow.getByRole("button", { name: "Gerenciar conta" }).click();
   await userRow.getByLabel("Conta ativa").check();
   await userForm.getByLabel("Motivo").fill("Teste de reativação administrativa");
   await userForm.getByRole("button", { name: "Salvar usuário" }).click();
   await expect(userRow.getByLabel("Conta ativa")).toBeChecked();
-  await page.getByRole("button", { name: "Moderação", exact: true }).click();
+  await page.getByRole("tab", { name: "Moderação", exact: true }).click();
   await expect(page.getByRole("table", { name: "Moderação de publicações", exact: true })).toBeVisible();
   const moderation = page.getByRole("form", { name: "Moderar publicação " + post.post_id, exact: true, includeHidden: true });
   await page.getByRole("row").filter({has:moderation}).getByRole("button",{name:"Revisar publicação"}).click();
   await moderation.getByLabel("Motivo").fill("Teste de moderação auditada " + post.post_id);
   await moderation.getByRole("button", { name: "Ocultar publicação" }).click();
+  await page.getByRole("dialog").getByRole("button", { name: "Ocultar agora", exact: true }).click();
   await expect(moderation.getByRole("button", { name: "Restaurar publicação" })).toBeVisible();
   for (const width of [1366, 390, 320]) {
     await page.setViewportSize({ width, height: 900 }); await noOverflow(page);
     await page.screenshot({ path: "../docs/thiago/admin-posts-" + width + ".png", fullPage: true });
   }
-  await page.getByRole("button", { name: "Auditoria", exact: true }).click();
+  await page.getByRole("tab", { name: "Auditoria", exact: true }).click();
   await expect(page.getByRole("table", { name: "Registro de auditoria", exact: true })).toBeVisible();
   await expect(page.getByText("Teste de moderação auditada " + post.post_id, { exact: true })).toBeVisible();
   for (const width of [1366, 390, 320]) {

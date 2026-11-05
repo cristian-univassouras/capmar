@@ -43,11 +43,12 @@ test("portfólio, estilos, parceiros, compartilhamento e QR mantêm persistênci
     await form.getByLabel("Site do parceiro 1", { exact: true }).fill("https://example.org");
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1)).toBe(true);
     await page.screenshot({ path: "../docs/thiago/portfolio-form-" + info.project.name + ".png", fullPage: true });
+    await form.getByLabel("Projeto visível publicamente").check();
     await form.getByRole("button", { name: "Criar projeto", exact: true }).click();
     await expect(page).toHaveURL(/\/projeto\/\d+$/);
     id = Number(new URL(page.url()).pathname.split("/").pop());
     await page.reload();
-    await expect(page.getByRole("heading", { name, exact: true })).toHaveCSS("color", "rgb(184, 67, 24)");
+    await expect(page.getByRole("heading", { name, exact: true })).toHaveCSS("color", "rgb(164, 58, 30)");
     const material = page.getByRole("region", { name: "Portfólio do projeto" });
     await expect(material.getByRole("heading", { level: 3 })).toHaveText(["Nossa iniciativa", "Vídeo da iniciativa", "Plano de apresentação"]);
     await page.route("https://www.youtube-nocookie.com/**", (route) => route.fulfill({ contentType: "text/html", body: "<!doctype html><title>Player de teste</title><p>Vídeo externo carregado</p>" }));
@@ -80,7 +81,8 @@ test("portfólio, estilos, parceiros, compartilhamento e QR mantêm persistênci
       const visitor = await guest.newPage(); await visitor.goto(base + "/projeto/" + id);
       await expect(visitor.getByRole("heading", { name: "Nossa iniciativa", exact: true })).toBeVisible();
       expect((await visitor.request.get(api + files[0])).status()).toBe(200);
-      await page.getByRole("button", { name: "Editar projeto", exact: true }).click();
+      await page.getByRole("button", { name: "Gerenciar", exact: true }).click();
+      await page.getByRole("menuitem", { name: "Editar projeto", exact: true }).click();
       const edit = page.getByRole("form", { name: "Editar projeto" });
       await edit.getByLabel("Estilo de apresentação").selectOption("minimalista");
       await edit.getByLabel("Cor de destaque").selectOption("azul");
@@ -90,8 +92,9 @@ test("portfólio, estilos, parceiros, compartilhamento e QR mantêm persistênci
       await visitor.reload();
       await expect(visitor.getByRole("heading", { name: "Projeto não encontrado ou sem acesso" })).toBeVisible();
       for (const file of files) expect((await visitor.request.get(api + file)).status()).toBe(404);
-      await expect(page.getByRole("heading", { name, exact: true })).toHaveCSS("color", "rgb(16, 10, 85)");
-      await page.getByRole("button", { name: "Editar projeto", exact: true }).click();
+      await expect(page.getByRole("heading", { name, exact: true })).toHaveCSS("color", "rgb(14, 47, 60)");
+      await page.getByRole("button", { name: "Gerenciar", exact: true }).click();
+      await page.getByRole("menuitem", { name: "Editar projeto", exact: true }).click();
       for (let i = 0; i < 3; i++) await edit.getByRole("button", { name: "Remover material 1", exact: true }).click();
       await edit.getByRole("button", { name: "Remover parceiro 1", exact: true }).click();
       await edit.getByLabel("Projeto visível publicamente").check();
@@ -117,7 +120,7 @@ test("recuperação recebe e-mail local, confirma senha e rejeita reutilização
   await page.goto("/login"); await page.getByRole("link", { name: "Esqueci minha senha" }).click();
   await page.getByLabel("E-mail da conta").fill(email);
   await page.getByRole("button", { name: "Enviar link de recuperação" }).click();
-  await expect(page.getByRole("status")).toContainText("Se houver uma conta ativa");
+  await expect(page.getByRole("status").filter({ hasText: "Se houver uma conta ativa" })).toBeVisible();
   let messageId = "";
   await expect.poll(async () => {
     const messages = await (await page.request.get(mail + "/api/v1/messages")).json();
@@ -133,7 +136,7 @@ test("recuperação recebe e-mail local, confirma senha e rejeita reutilização
   await expect(page.getByRole("alert").filter({ hasText: "As senhas precisam ser iguais." })).toBeVisible();
   await page.getByLabel("Confirmar nova senha", { exact: true }).fill("Capmar-Recuperado@123");
   await page.getByRole("button", { name: "Redefinir senha", exact: true }).click();
-  await expect(page.getByRole("status")).toContainText("Senha redefinida");
+  await expect(page.getByRole("status").filter({ hasText: "Senha redefinida" })).toBeVisible();
   await page.screenshot({ path: "../docs/thiago/recovery-" + info.project.name + ".png", fullPage: true });
   await page.getByRole("link", { name: "Entrar com a nova senha" }).click();
   await page.getByLabel("E-mail", { exact: true }).fill(email);
