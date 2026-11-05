@@ -4,6 +4,7 @@ import { useRouter } from "next/navigation";
 import { useState } from "react";
 
 import AuthShell from "@/app/_auth/AuthShell";
+import { useRedirectIfAuthenticated } from "@/lib/use-redirect-if-authenticated";
 import { Field, FormError, SubmitButton } from "@/app/_auth/ui";
 import { register, saveSession } from "@/lib/api";
 import AuthSwitchLink from "@/app/_auth/AuthSwitchLink";
@@ -11,6 +12,7 @@ import { currentAuthDestination } from "@/lib/auth-navigation";
 
 export default function RegisterPage() {
   const router = useRouter();
+  useRedirectIfAuthenticated();
   const [loading, setLoading] = useState(false);
   const [done, setDone] = useState(false);
   const [error, setError] = useState<string | null>(null);

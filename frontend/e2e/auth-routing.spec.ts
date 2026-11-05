@@ -15,3 +15,23 @@ test("login inválido explica credenciais e alternar cadastro preserva retorno a
   await expect(page).toHaveURL(/\/projeto\/1$/);
   await expect(page.getByRole("heading", { level: 1, name: "Feira Criativa de Maricá" })).toBeVisible();
 });
+
+const protectedRoutes = ["/feed", "/projetos", "/equipes", "/equipe/5", "/perfil", "/chat", "/seguranca", "/admin"];
+for (const route of protectedRoutes) {
+  test(`visitante em ${route} é levado ao login e volta depois`, async ({ page }) => {
+    await page.goto(route);
+    await expect.poll(() => { const url = new URL(page.url()); return url.pathname + url.search; }).toBe("/login?next=" + encodeURIComponent(route));
+    await expect(page.getByRole("button", { name: "Entrar", exact: true })).toBeVisible();
+  });
+}
+
+test("quem já está logado não vê login nem cadastro e cai no feed", async ({ page }) => {
+  const api = process.env.E2E_API_URL ?? "http://localhost:8000";
+  const base = process.env.E2E_BASE_URL ?? "http://localhost:3000";
+  const response = await page.request.post(api + "/auth/login", { headers: { Origin: base, "X-CSRF-Protection": "1" }, data: { email: "e2e_alice@example.com", password: "Capmar-E2E@123" } });
+  expect(response.status()).toBe(200);
+  await page.goto("/login");
+  await expect(page).toHaveURL(/\/feed$/);
+  await page.goto("/register?next=" + encodeURIComponent("/projetos"));
+  await expect(page).toHaveURL(/\/projetos$/);
+});
