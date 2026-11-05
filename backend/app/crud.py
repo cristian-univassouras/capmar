@@ -1,5 +1,5 @@
 from fastapi import HTTPException
-from sqlalchemy import func, select, or_
+from sqlalchemy import func, select, or_, false
 from .access import project_access
 from sqlalchemy.orm import Session, selectinload
 
@@ -78,8 +78,11 @@ _PROJECT_LOADS = (
 )
 
 
-def project_filters(user=None, q="", category_id=None, public_only=False, owner_id=None):
+def project_filters(user=None, q="", category_id=None, public_only=False, owner_id=None, writable_only=False):
     conditions = [project_access(user)]
+    if writable_only:
+        conditions.append(or_(models.Project.owner_id == user.user_id,
+            models.Project.teams.any(models.Team.leader_id == user.user_id)) if user else false())
     if public_only:
         conditions.append(models.Project.visibility.is_(True))
     if category_id is not None:
@@ -104,11 +107,11 @@ def count_projects(db, **filters):
 
 
 def list_projects(db: Session, skip: int = 0, limit: int = 100, user=None,
-                  q="", category_id=None, public_only=False, owner_id=None) -> list[models.Project]:
+                  q="", category_id=None, public_only=False, owner_id=None, writable_only=False) -> list[models.Project]:
     stmt = (
         select(models.Project)
         .options(*_PROJECT_LOADS)
-        .where(*project_filters(user, q, category_id, public_only, owner_id))
+        .where(*project_filters(user, q, category_id, public_only, owner_id, writable_only))
         .order_by(models.Project.project_id.desc())
         .offset(skip)
         .limit(limit)

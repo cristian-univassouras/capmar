@@ -3,6 +3,7 @@ from typing import Literal
 from .security import password_bytes
 from .keywords import normalize_keywords
 from .engagement_schemas import validate_funding_url
+from .presentation import PortfolioItem, Partner
 
 from pydantic import BaseModel, ConfigDict, EmailStr, Field, field_validator, model_validator
 
@@ -39,7 +40,7 @@ class UserCreate(ValidatedInput):
     first_name: str | None = Field(default=None, max_length=20)
     last_name: str | None = Field(default=None, max_length=100)
     email: EmailStr = Field(max_length=50)
-    password: str = Field(..., min_length=6, max_length=72)
+    password: str = Field(..., min_length=12, max_length=72)
 
 
 class UserRead(BaseModel):
@@ -117,6 +118,9 @@ class CategoryRead(CategoryBase):
 
 
 class ProjectBase(ValidatedInput):
+    accent: Literal["roxo", "laranja", "azul"] = "roxo"
+    portfolio: list[PortfolioItem] = Field(default_factory=list, max_length=12)
+    partners: list[Partner] = Field(default_factory=list, max_length=8)
     authorship: Literal["individual", "group"] = "individual"
     responsible_names: str | None = Field(default=None, max_length=500)
     funding_url: str | None = Field(default=None, max_length=2048)
@@ -125,7 +129,7 @@ class ProjectBase(ValidatedInput):
 
     name: str = Field(..., min_length=1, max_length=100)
     description: str | None = Field(default=None, max_length=10000)
-    template: str | None = Field(default=None, max_length=100)
+    template: Literal["classico", "criativo", "minimalista"] | None = None
     status: Literal["rascunho", "ativo", "pausado", "concluido"] = "rascunho"
     visibility: bool = True
     category_id: int | None = None
@@ -146,6 +150,9 @@ class ProjectCreate(ProjectBase):
 
 
 class ProjectUpdate(ValidatedInput):
+    accent: Literal["roxo", "laranja", "azul"] = "roxo"
+    portfolio: list[PortfolioItem] = Field(default_factory=list, max_length=12)
+    partners: list[Partner] = Field(default_factory=list, max_length=8)
     authorship: Literal["individual", "group"] | None = None
     responsible_names: str | None = Field(default=None, max_length=500)
     funding_url: str | None = Field(default=None, max_length=2048)
@@ -156,7 +163,7 @@ class ProjectUpdate(ValidatedInput):
 
     name: str | None = Field(default=None, min_length=1, max_length=100)
     description: str | None = Field(default=None, max_length=10000)
-    template: str | None = Field(default=None, max_length=100)
+    template: Literal["classico", "criativo", "minimalista"] | None = None
     status: Literal["rascunho", "ativo", "pausado", "concluido"] | None = None
     visibility: bool | None = None
     category_id: int | None = None

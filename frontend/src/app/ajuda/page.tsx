@@ -1,6 +1,7 @@
-import Navbar from "@/app/_landing/layout/Navbar";
-import Footer from "@/app/_landing/layout/Footer";
-import { Mail, ExternalLink } from "lucide-react";
+import PublicFrame from "@/app/_components/PublicFrame";
+import Link from "next/link";
+
+import { Mail, ExternalLink, FolderKanban, MessagesSquare, KeyRound, ChevronDown } from "lucide-react";
 
 const devs = [
   {
@@ -29,94 +30,13 @@ const devs = [
   },
 ];
 
-export default function AjudaPage() {
-  return (
-    <main className="min-h-screen w-full bg-background">
-      <Navbar />
 
-      <div className="max-w-4xl mx-auto px-4 pt-40 pb-24 flex flex-col items-center gap-20">
-
-        {/* Header */}
-        <div className="text-center">
-          <h1 className="font-heading font-black text-5xl md:text-7xl uppercase tracking-tighter text-primary leading-none mb-6">
-            Precisando<br />de ajuda?
-          </h1>
-          <p className="text-gray-500 text-lg max-w-md mx-auto">
-            Estamos aqui para ajudar. Entre em contato pelo e-mail da equipe ou fale diretamente com um dos nossos desenvolvedores.
-          </p>
-        </div>
-
-        {/* Email da equipe */}
-        <div className="w-full bg-primary rounded-[40px] p-10 flex flex-col md:flex-row items-center justify-between gap-6 text-white">
-          <div>
-            <p className="text-white/60 text-sm font-semibold uppercase tracking-widest mb-1">E-mail da equipe</p>
-            <p className="font-heading font-black text-2xl md:text-3xl">capmar.dev@gmail.com</p>
-          </div>
-          <a
-            href="mailto:capmar.dev@gmail.com"
-            className="group relative overflow-hidden bg-white border border-white px-8 py-4 rounded-full font-bold text-primary transition-all duration-700 hover:bg-primary hover:border-white/40 shrink-0 flex items-center gap-2"
-          >
-            <Mail className="w-4 h-4" />
-            <div className="relative flex items-center justify-center overflow-hidden h-5">
-              <span className="block transition-transform duration-700 ease-[cubic-bezier(0.16,1,0.3,1)] group-hover:translate-y-[-150%]">
-                Nos mande um e-mail
-              </span>
-              <span className="absolute block text-white transition-transform duration-700 ease-[cubic-bezier(0.16,1,0.3,1)] translate-y-[150%] group-hover:translate-y-0">
-                Nos mande um e-mail
-              </span>
-            </div>
-          </a>
-        </div>
-
-        {/* Devs */}
-        <div className="w-full">
-          <p className="text-center text-gray-400 text-sm font-semibold uppercase tracking-widest mb-8">
-            Fale com os desenvolvedores
-          </p>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            {devs.map((dev) => (
-              <div
-                key={dev.name}
-                className="bg-white rounded-[32px] p-7 flex flex-col gap-4 border border-gray-100 hover:border-primary/20 hover:shadow-lg transition-all duration-300"
-              >
-                {/* Avatar + info */}
-                <div className="flex items-center gap-4">
-                  <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center text-primary font-heading font-black text-lg shrink-0">
-                    {dev.name[0]}
-                  </div>
-                  <div>
-                    <p className="font-semibold text-gray-900">{dev.name}</p>
-                    <p className="text-sm text-gray-400">{dev.role}</p>
-                  </div>
-                </div>
-
-                {/* Links */}
-                <div className="flex flex-col gap-2 pl-16">
-                  <a
-                    href={`mailto:${dev.email}`}
-                    className="flex items-center gap-2 text-sm text-gray-500 hover:text-primary transition-colors"
-                  >
-                    <Mail className="w-4 h-4 shrink-0" />
-                    {dev.email}
-                  </a>
-                  <a
-                    href={dev.linkedin}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="flex items-center gap-2 text-sm text-gray-500 hover:text-primary transition-colors"
-                  >
-                    <ExternalLink className="w-4 h-4 shrink-0" />
-                    {dev.linkedin.replace("https://", "")}
-                  </a>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-
-      </div>
-
-      <Footer />
-    </main>
-  );
-}
+const questions=[
+ ["Como cadastro meu projeto?","Entre na sua conta e abra Projetos → Novo projeto. Preencha o nome e as informações básicas. Você pode adicionar imagens, materiais e parceiros agora ou editar mais tarde."],
+ ["Quem pode ver meu projeto?","Projetos públicos aparecem na vitrine e podem ser compartilhados por link ou QR Code. Projetos privados ficam disponíveis apenas para pessoas autorizadas. A visibilidade pode ser alterada ao editar o projeto."],
+ ["Quais materiais posso enviar?","Imagens e PDFs de até 5 MB. PDFs devem estar sem senha e ter até 50 páginas. Para vídeos, adicione um link do YouTube ou Vimeo. Depois do envio, clique em Adicionar material e salve o projeto."],
+ ["Como começo uma conversa?","Abra Mensagens e escolha Nova mensagem para encontrar uma pessoa. Você também pode usar Enviar mensagem no perfil dela. As conversas das equipes aparecem para seus integrantes."],
+ ["Como recupero minha senha?","Na tela de entrada, escolha Esqueci minha senha. O link enviado por e-mail vale por 30 minutos e pode ser usado uma vez. Um novo pedido substitui o link anterior. Se você usa autenticador, o código continua sendo necessário."],
+ ["Perdi o acesso ao autenticador. O que faço?","Entre em contato com a equipe pelo canal abaixo. A recuperação exige verificação da identidade; não envie sua senha ou códigos de acesso por e-mail."],
+];
+export default function AjudaPage(){return <PublicFrame className="max-w-5xl"><div className="ui-page-heading"><div><p className="ui-eyebrow">Central de ajuda</p><h1 className="mt-3">Como podemos ajudar?</h1><p>Encontre orientação para os próximos passos na comunidade.</p></div></div><div className="grid gap-4 sm:grid-cols-3">{[{icon:FolderKanban,title:"Meu projeto",text:"Apresentação e materiais",href:"/projetos"},{icon:MessagesSquare,title:"Minhas conversas",text:"Pessoas e equipes",href:"/chat"},{icon:KeyRound,title:"Meu acesso",text:"Recuperar senha",href:"/esqueci-senha"}].map(({icon:Icon,title,text,href})=><Link href={href} key={title} className="ui-panel p-6 transition hover:border-primary/30"><Icon className="mb-5 text-primary" size={25}/><h2 className="font-heading text-lg font-bold text-secondary">{title}</h2><p className="mt-2 text-xs text-gray-500">{text} ↗</p></Link>)}</div><section className="py-4"><h2 className="mb-5 font-heading text-xl font-bold text-secondary">Respostas para o dia a dia</h2><div className="ui-panel divide-y divide-gray-100">{questions.map(([q,a])=><details key={q} className="help-question"><summary>{q}<ChevronDown size={17}/></summary><p>{a}</p></details>)}</div></section><aside className="flex flex-wrap items-center justify-between gap-5 rounded-2xl bg-primary p-7 text-white"><div><h2 className="font-heading text-xl font-bold">Ainda precisa de uma mão?</h2><p className="mt-2 text-sm text-white/70">Fale com a equipe do CapMar pelo nosso e-mail.</p><p className="mt-1 break-all text-sm font-semibold">capmar.dev@gmail.com</p></div><a href="mailto:capmar.dev@gmail.com" className="ui-button bg-white text-primary"><Mail size={17}/>Enviar e-mail</a></aside><details className="py-4"><summary className="text-sm font-semibold text-gray-500">Equipe de desenvolvimento</summary><div className="mt-5 grid gap-4 sm:grid-cols-2">{devs.map(dev=><div key={dev.name} className="ui-panel p-5"><h3 className="font-semibold text-secondary">{dev.name}</h3><p className="mt-1 text-xs text-gray-400">{dev.role}</p><a href={"mailto:"+dev.email} className="mt-4 flex items-center gap-2 break-all text-xs text-gray-500"><Mail size={14} className="shrink-0"/>{dev.email}</a><a href={dev.linkedin} target="_blank" rel="noopener noreferrer" className="mt-3 flex items-center gap-2 text-xs text-primary"><ExternalLink size={14}/>LinkedIn</a></div>)}</div></details></PublicFrame>;}

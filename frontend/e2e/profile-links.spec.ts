@@ -19,7 +19,7 @@ test("nomes e avatares abrem perfis no feed, comentários, equipes e chat", asyn
     const links = page.getByRole("link", { name: label, exact: true });
     await expect(links.nth(index)).toHaveAttribute("href", "/usuario/" + post.user_id);
     await links.nth(index).click();
-    await expect(page).toHaveURL("http://localhost:3000/usuario/" + post.user_id);
+    await expect(page).toHaveURL((process.env.E2E_BASE_URL ?? "http://localhost:3000") + "/usuario/" + post.user_id);
     await expect(page.getByRole("button", { name: "Enviar mensagem", exact: true })).toBeVisible();
   }
 
@@ -29,7 +29,7 @@ test("nomes e avatares abrem perfis no feed, comentários, equipes e chat", asyn
   const href = await avatar.getAttribute("href");
   expect(href).toMatch(/^\/usuario\/\d+$/);
   await avatar.click();
-  await expect(page).toHaveURL("http://localhost:3000" + href);
+  await expect(page).toHaveURL((process.env.E2E_BASE_URL ?? "http://localhost:3000") + href);
 
   const team = await (await page.request.get(api + "/teams/1")).json();
   const member = team.members.find((u: { user_id: number }) => u.user_id !== me.user_id);
@@ -38,10 +38,10 @@ test("nomes e avatares abrem perfis no feed, comentários, equipes e chat", asyn
   const memberLinks = page.getByRole("link", { name: "Ver perfil de @" + member.username, exact: true });
   const photo = memberLinks.filter({ has: page.locator("img, .rounded-full") }).first();
   await photo.click();
-  await expect(page).toHaveURL("http://localhost:3000/usuario/" + member.user_id);
+  await expect(page).toHaveURL((process.env.E2E_BASE_URL ?? "http://localhost:3000") + "/usuario/" + member.user_id);
   await page.goto("/equipe/1");
   await memberLinks.last().click();
-  await expect(page).toHaveURL("http://localhost:3000/usuario/" + member.user_id);
+  await expect(page).toHaveURL((process.env.E2E_BASE_URL ?? "http://localhost:3000") + "/usuario/" + member.user_id);
 
   const people = await (await page.request.get(api + "/users?q=e2e_bob")).json();
   const recipient = people.find((u: { username: string }) => u.username === "e2e_bob");
@@ -51,5 +51,5 @@ test("nomes e avatares abrem perfis no feed, comentários, equipes e chat", asyn
   const person = room.getByRole("heading").getByRole("link");
   const target = await person.getAttribute("href");
   await person.click();
-  await expect(page).toHaveURL("http://localhost:3000" + target);
+  await expect(page).toHaveURL((process.env.E2E_BASE_URL ?? "http://localhost:3000") + target);
 });

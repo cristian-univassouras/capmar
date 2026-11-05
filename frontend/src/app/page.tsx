@@ -1,28 +1,7 @@
+import Image from "next/image";
+import Link from "next/link";
+import { ArrowUpRight, MapPin, FolderKanban, MessagesSquare, Layers } from "lucide-react";
 import Navbar from "@/app/_landing/layout/Navbar";
-import Hero from "@/app/_landing/sections/Hero";
-import PhoneSection from "@/app/_landing/sections/PhoneSection";
-import Features from "@/app/_landing/sections/Features";
-import CapmarShowcase from "@/app/_landing/sections/CapmarShowcase";
-import SecurityGrid from "@/app/_landing/sections/SecurityGrid";
-import FinalCTA from "@/app/_landing/sections/FinalCTA";
 import Footer from "@/app/_landing/layout/Footer";
-import InteractiveGrid from "@/app/_landing/components/InteractiveGrid";
-
-export default function Home() {
-  return (
-    <main className="min-h-screen w-full overflow-x-clip">
-      <Navbar />
-      <Hero />
-      <PhoneSection>
-        <Features />
-      </PhoneSection>
-      <CapmarShowcase />
-      <SecurityGrid />
-      <div className="relative w-full bg-background overflow-hidden">
-        <InteractiveGrid />
-        <FinalCTA />
-        <Footer />
-      </div>
-    </main>
-  );
-}
+import CommunityCTA from "@/app/_components/CommunityCTA";
+export default function Home(){return <main className="min-h-screen overflow-x-clip bg-background"><Navbar/><section className="landing-hero"><div className="landing-hero-copy"><p className="mb-6 inline-flex items-center gap-2 rounded-full border border-primary/10 bg-white px-4 py-2 text-xs font-semibold text-primary"><MapPin size={14}/>Feito em Maricá, para Maricá.</p><h1 className="font-heading text-5xl font-black leading-[1.04] tracking-tight text-primary sm:text-6xl lg:text-7xl">A vitrine do<br/>seu projeto.<span className="mt-3 block text-secondary/70">O começo de<br/>novas conexões.</span></h1><p className="mt-7 max-w-lg text-base leading-relaxed text-gray-600">Apresente sua iniciativa, compartilhe o que está construindo e encontre pessoas para fazer acontecer junto com você.</p><div className="mt-8 flex flex-wrap gap-3"><Link href="/home" className="ui-button ui-button-primary">Explorar projetos<ArrowUpRight size={17}/></Link><Link href="/projetos" className="ui-button">Apresentar meu projeto</Link></div><p className="mt-5 text-xs text-gray-500">Conheça as iniciativas da cidade sem precisar criar uma conta.</p></div><div className="landing-illustration"><span className="landing-orbit"/><Image src="/capybara_rocket_space.png" alt="Mascote do CapMar em um foguete, ilustração da marca" width={550} height={550} priority className="relative z-10 h-auto w-full rounded-[32px] object-contain shadow-xl shadow-primary/10"/><div className="landing-note"><span className="h-2 w-2 rounded-full bg-accent"/>Grandes ideias também começam por aqui.</div></div></section><section id="features" className="mx-auto max-w-6xl scroll-mt-24 px-4 py-16 sm:px-6"><div className="ui-page-heading"><div><p className="ui-eyebrow">Como funciona</p><h2 className="mt-3 font-heading text-3xl font-bold tracking-tight text-secondary sm:text-4xl">Da sua ideia para a comunidade.</h2><p>Um espaço para mostrar, desenvolver e conectar projetos locais.</p></div></div><div className="mt-8 grid gap-5 md:grid-cols-3">{[{icon:FolderKanban,n:"01",title:"Apresente seu projeto",text:"Conte a história da sua iniciativa e mostre o que você quer construir."},{icon:Layers,n:"02",title:"Dê forma à sua ideia",text:"Reúna imagens, documentos, vídeos e parcerias em um portfólio."},{icon:MessagesSquare,n:"03",title:"Construa conexões",text:"Troque mensagens, compartilhe atualizações e organize sua equipe."}].map(({icon:Icon,n,title,text})=><article key={n} className="ui-panel p-7"><div className="mb-8 flex items-center justify-between"><Icon size={27} className="text-primary"/><span className="text-xs text-gray-300">{n}</span></div><h3 className="font-heading text-xl font-bold text-secondary">{title}</h3><p className="mt-3 text-sm leading-relaxed text-gray-500">{text}</p></article>)}</div><div className="mt-14"><CommunityCTA/></div></section><Footer/></main>;}

@@ -64,21 +64,21 @@ export default function ProjectBrowser({ publicOnly = false, ownerId, refresh = 
       <p role="status" className="text-sm text-gray-600">{data.total} projeto(s) encontrado(s)</p>
       {data.items.length ? <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
         {data.items.map((project) => <Link key={project.project_id} href={"/projeto/" + project.project_id}
-          className="min-w-0 overflow-hidden rounded-2xl border border-gray-200 bg-white transition hover:border-primary focus-visible:outline-2 focus-visible:outline-primary">
-          <div className="relative h-32 bg-gradient-to-br from-primary/15 to-secondary/15">
+          className="project-card min-w-0 overflow-hidden rounded-2xl border border-gray-200 bg-white transition hover:border-primary focus-visible:outline-2 focus-visible:outline-primary">
+          <div className="project-card-cover relative h-36">{!project.cover_url && <span className="project-card-placeholder"><span>CapMar</span><small>{project.category?.description ?? "Ideias da comunidade"}</small></span>}
             {project.cover_url && <img src={mediaUrl(project.cover_url)} alt="" className="h-full w-full object-cover" />}
             {project.logo_url && <img src={mediaUrl(project.logo_url)} alt="" className="absolute bottom-3 left-3 h-12 w-12 rounded-xl border-2 border-white object-cover" />}
           </div>
           <div className="space-y-3 p-5">
-            <h2 className="break-words font-heading text-lg font-bold">{project.name}</h2>
+            <h2 className="line-clamp-2 break-words font-heading text-lg font-bold text-secondary">{project.name}</h2>
             <p className="text-xs text-gray-600">{project.category?.description ?? "Sem categoria"} · {project.status}{!project.visibility && " · Privado"}</p>
             <p className="line-clamp-3 break-words text-sm text-gray-600">{project.description || "Conheça este projeto."}</p>
             <div className="flex flex-wrap gap-1">{project.keywords.map((tag) => <span key={tag.keyword_id} className="break-all rounded-lg bg-primary/10 px-2 py-1 text-xs text-primary">#{tag.word}</span>)}</div>
-            <p className="text-sm text-primary">{project.likes_count} curtidas · {project.comments_count} comentários</p>
+            <p className="text-xs text-gray-500">{project.likes_count} {project.likes_count === 1 ? "curtida" : "curtidas"} · {project.comments_count} {project.comments_count === 1 ? "comentário" : "comentários"}</p>
             <span className="inline-block text-sm font-semibold text-primary">Ver projeto →</span>
           </div>
         </Link>)}
-      </div> : <p className="rounded-2xl bg-white p-8 text-center text-gray-600">Nenhum projeto encontrado com esses filtros.</p>}
+      </div> : <p className="rounded-2xl bg-white p-8 text-center text-gray-600">{q || category ? "Nenhum projeto encontrado com esses filtros." : ownerId ? publicOnly ? "Este perfil ainda não tem projetos públicos." : "Seu próximo projeto começa aqui. Use Novo projeto para cadastrar sua primeira iniciativa." : "Ainda não há projetos para explorar."}</p>}
       {data.total > PAGE_SIZE && <nav aria-label="Paginação de projetos" className="flex flex-wrap items-center justify-center gap-4">
         <button disabled={page <= 1} onClick={() => navigate({ page: page - 1 })} className="rounded-xl border border-gray-300 bg-white px-4 py-3 disabled:opacity-40">Anterior</button>
         <span className="text-sm">Página {page} de {Math.ceil(data.total / PAGE_SIZE)}</span>

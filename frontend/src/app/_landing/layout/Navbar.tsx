@@ -1,14 +1,19 @@
 "use client";
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
+import { getOptionalMe } from "@/lib/api";
+import { useSessionRevision } from "@/lib/use-session-revision";
 import { Menu, X } from "lucide-react";
 
 const links = [
-  { href: "/home", label: "Explorar projetos" }, { href: "/#features", label: "Destaques" },
+  { href: "/home", label: "Explorar projetos" }, { href: "/#features", label: "Como funciona" },
   { href: "/ajuda", label: "Ajuda" }, { href: "/sobre", label: "Sobre" },
 ];
 export default function Navbar() {
   const [open, setOpen] = useState(false);
+  const [signed,setSigned]=useState(false);
+  const revision=useSessionRevision();
+  useEffect(()=>{let active=true;getOptionalMe().then(me=>{if(active)setSigned(Boolean(me));}).catch(()=>{});return()=>{active=false;};},[revision]);
   const container = useRef<HTMLElement>(null);
   const toggle = useRef<HTMLButtonElement>(null);
   useEffect(() => {
@@ -23,8 +28,8 @@ export default function Navbar() {
       <Link href="/" className="shrink-0 font-heading text-xl font-black text-primary sm:text-2xl">CapMar</Link>
       <nav aria-label="Navegação principal" className="hidden items-center gap-5 text-sm font-semibold lg:flex">{links.map((link) => <Link key={link.href} href={link.href}>{link.label}</Link>)}</nav>
       <div className="flex shrink-0 items-center gap-2 text-xs font-semibold sm:gap-3 sm:text-sm">
-        <Link href="/login" className="text-primary">Entrar</Link>
-        <Link href="/register" className="rounded-xl bg-primary px-3 py-3 text-white sm:px-4">Criar conta</Link>
+        <Link href={signed?"/feed":"/login"} className="text-primary">{signed?"Comunidade":"Entrar"}</Link>
+        <Link href={signed?"/projetos":"/register"} className="rounded-xl bg-primary px-3 py-3 text-white sm:px-4">{signed?"Meus projetos":"Criar conta"}</Link>
         <button ref={toggle} aria-label={open ? "Fechar menu" : "Abrir menu"} aria-expanded={open} aria-controls="landing-menu" onClick={() => setOpen(!open)} className="shrink-0 rounded-xl p-2 lg:hidden">{open ? <X /> : <Menu />}</button>
       </div>
     </div>

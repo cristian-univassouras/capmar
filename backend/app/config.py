@@ -24,6 +24,13 @@ class Settings(BaseSettings):
     login_limit: int = Field(default=10, ge=1)
     register_limit: int = Field(default=5, ge=1)
     write_limit: int = Field(default=120, ge=1)
+    site_url: str = "http://localhost:3000"
+    smtp_host: str = ""
+    smtp_port: int = Field(default=587, ge=1, le=65535)
+    smtp_username: str = ""
+    smtp_password: str = Field(default="", repr=False)
+    smtp_starttls: bool = True
+    smtp_from: str = "CapMar <noreply@capmar.local>"
     model_config = SettingsConfigDict(env_file=".env", extra="ignore", hide_input_in_errors=True)
 
     @property
@@ -32,6 +39,9 @@ class Settings(BaseSettings):
 
     @model_validator(mode="after")
     def validate_security(self):
+        site = urlsplit(self.site_url)
+        if site.scheme not in ("http", "https") or not site.hostname or site.username or site.password or site.query or site.fragment or site.path not in ("", "/"):
+            raise ValueError("SITE_URL deve ser uma origem HTTP(S)")
         if not self.secret_key.strip():
             raise ValueError("SECRET_KEY não pode ser vazia")
         origins = self.cors_origins_list
@@ -46,6 +56,8 @@ class Settings(BaseSettings):
         if self.cookie_samesite == "none" and not self.cookie_secure:
             raise ValueError("COOKIE_SAMESITE=none exige COOKIE_SECURE=true")
         if self.environment == "production":
+            if site.scheme != "https" or not self.smtp_host or not self.smtp_starttls:
+                raise ValueError("Produção exige SITE_URL HTTPS e SMTP com STARTTLS para recuperação de senha")
             if "*" in self.forwarded_allow_ips:
                 raise ValueError("Produção não pode confiar em forwarded headers de qualquer IP")
             if ("secret_key" not in self.model_fields_set or len(self.secret_key.encode()) < 32

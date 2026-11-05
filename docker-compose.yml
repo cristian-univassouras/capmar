@@ -26,6 +26,15 @@ services:
       COOKIE_SAMESITE: ${COOKIE_SAMESITE:-lax}
       FORWARDED_ALLOW_IPS: ${FORWARDED_ALLOW_IPS:-127.0.0.1}
       UPLOAD_DIR: /app/uploads
+      SITE_URL: ${SITE_URL:-http://localhost:3000}
+      SMTP_HOST: ${SMTP_HOST:-mailpit}
+      SMTP_PORT: ${SMTP_PORT:-1025}
+      SMTP_STARTTLS: ${SMTP_STARTTLS:-false}
+      SMTP_USERNAME: ${SMTP_USERNAME:-}
+      SMTP_PASSWORD: ${SMTP_PASSWORD:-}
+      SMTP_FROM: ${SMTP_FROM:-CapMar <noreply@capmar.local>}
+      LOGIN_LIMIT: ${LOGIN_LIMIT:-10}
+      REGISTER_LIMIT: ${REGISTER_LIMIT:-5}
     volumes:
       - uploads:/app/uploads
     depends_on:
@@ -48,7 +57,7 @@ services:
     depends_on:
       - backend
     ports:
-      - "3000:3000"
+      - "127.0.0.1:${FRONTEND_PORT:-3000}:3000"
 
   migrate:
     build: ./backend
@@ -58,6 +67,11 @@ services:
     depends_on:
       db:
         condition: service_healthy
+
+  mailpit:
+    image: axllent/mailpit:v1.29
+    ports:
+      - "127.0.0.1:8025:8025"
 
 volumes:
   pgdata:

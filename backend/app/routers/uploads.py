@@ -10,6 +10,13 @@ from ..media import MAX_BYTES, can_read_upload, store_upload
 router = APIRouter(tags=["uploads"])
 
 
+@router.post("/upload/document", response_model=schemas.UploadResponse)
+def upload_document(file: UploadFile = File(...), user: models.User = Depends(get_current_user),
+                    db: Session = Depends(get_db, scope="function")):
+    upload = store_upload(db, user, file.file.read(MAX_BYTES + 1), document=True)
+    return schemas.UploadResponse(url="/uploads/" + upload.upload_id)
+
+
 @router.post("/upload", response_model=schemas.UploadResponse)
 def upload_image(file: UploadFile = File(...), user: models.User = Depends(get_current_user),
                  db: Session = Depends(get_db, scope="function")):
@@ -27,8 +34,11 @@ def read_upload(upload_id: str, user: models.User | None = Depends(get_current_u
     upload = db.get(models.Upload, upload_id)
     if upload is None or not can_read_upload(db, upload, user):
         raise HTTPException(404, "Imagem não encontrada")
-    return Response(upload.data, media_type=upload.content_type,
-                    headers={"Cache-Control": "private, no-store", "X-Content-Type-Options": "nosniff"})
+    headers = {"Cache-Control": "private, no-store", "X-Content-Type-Options": "nosniff",
+               "Content-Security-Policy": "default-src 'none'; sandbox"}
+    if upload.content_type == "application/pdf":
+        headers["Content-Disposition"] = 'attachment; filename="portfolio.pdf"'
+    return Response(upload.data, media_type=upload.content_type, headers=headers)
 
 
 @router.delete("/uploads/{upload_id}", status_code=204)

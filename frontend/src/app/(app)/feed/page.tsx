@@ -9,7 +9,7 @@ import {
   deletePost,
   getStoredUser,
   listPosts,
-  listProjects,
+  searchProjects,
   mediaUrl,
   type Post,
   type Project,
@@ -33,11 +33,11 @@ export default function FeedPage() {
   const [deleting, setDeleting] = useState<number | null>(null);
 
   useEffect(() => {
-    Promise.all([listPosts(), listProjects()])
+    Promise.all([listPosts(), searchProjects({ writable_only: true, limit: 100 })])
       .then(([p, pr]) => {
         setMe(getStoredUser());
         setPosts(p);
-        setProjects(pr);
+        setProjects(pr.items);
       })
       .catch((err) => setError(err instanceof Error ? err.message : "Erro ao carregar."))
       .finally(() => setLoading(false));
@@ -80,7 +80,7 @@ export default function FeedPage() {
   }
 
   return (
-    <div className="max-w-2xl mx-auto space-y-6">
+    <div className="max-w-3xl mx-auto space-y-6"><div className="ui-page-heading"><div><h1>Publicações</h1><p>Novidades, ideias e próximos passos dos projetos da comunidade.</p></div></div>
       {/* Criar publicação */}
       <form onSubmit={handlePublish} className="bg-white rounded-2xl border border-gray-100 p-4 flex gap-3">
         <ProfileLink user={me}><Avatar user={me} className="w-9 h-9 text-sm" /></ProfileLink>
@@ -89,7 +89,7 @@ export default function FeedPage() {
             value={content}
             onChange={(e) => setContent(e.target.value)}
             rows={2}
-            maxLength={10000}
+            maxLength={5000}
             aria-label="Texto da publicação"
             placeholder="Compartilhe uma atualização do seu projeto..."
             className="w-full bg-gray-50 rounded-xl px-4 py-3 text-sm text-gray-700 placeholder-gray-400 outline-none focus:ring-2 focus:ring-primary/20 resize-none"
@@ -109,7 +109,7 @@ export default function FeedPage() {
             </div>
           ) : (
             <div className="mt-3">
-              <ImagePicker value={null} onChange={setImageUrl} onBusyChange={setUploading} hint="Adicione uma foto (opcional)" />
+              <ImagePicker variant="compact" value={null} onChange={setImageUrl} onBusyChange={setUploading} hint="Adicione uma foto (opcional)" />
             </div>
           )}
 
@@ -130,7 +130,7 @@ export default function FeedPage() {
             <button
               type="submit"
               disabled={posting || uploading || !content.trim()}
-              className="ml-auto bg-primary text-white text-xs font-semibold px-4 py-1.5 rounded-xl hover:bg-primary/90 transition-colors disabled:opacity-50"
+              className="ui-button ui-button-primary ml-auto"
             >
               {posting ? "Publicando..." : uploading ? "Enviando imagem..." : "Publicar"}
             </button>
@@ -178,7 +178,7 @@ export default function FeedPage() {
             {post.image_url && (
               <div className="rounded-xl overflow-hidden border border-gray-100">
                 {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img src={mediaUrl(post.image_url)} alt="" className="w-full max-h-96 object-cover" />
+                <img src={mediaUrl(post.image_url)} alt="Imagem da publicação" className="w-full max-h-96 object-contain bg-gray-50" />
               </div>
             )}
 

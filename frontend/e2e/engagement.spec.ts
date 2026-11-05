@@ -22,7 +22,7 @@ function otp(secret: string) {
 
 test("chat entrega mensagem, responde e recupera ao reconectar", async ({ page, browser }, info) => {
   await login(page, "e2e_alice");
-  const bobContext = await browser.newContext({ baseURL: "http://localhost:3000", viewport: { width: 390, height: 844 } });
+  const bobContext = await browser.newContext({ baseURL: process.env.E2E_BASE_URL ?? "http://localhost:3000", viewport: { width: 390, height: 844 } });
   const bob = await bobContext.newPage();
   try {
     await login(bob, "e2e_bob");
@@ -41,7 +41,7 @@ test("chat entrega mensagem, responde e recupera ao reconectar", async ({ page, 
     await expect(room.getByRole("status")).toHaveText("Conectado");
     await bob.goto("/usuario/" + aliceUser.user_id);
     await bob.getByRole("button", { name: "Enviar mensagem", exact: true }).click();
-    await expect(bob).toHaveURL("http://localhost:3000/chat?conversation=" + cid);
+    await expect(bob).toHaveURL((process.env.E2E_BASE_URL ?? "http://localhost:3000") + "/chat?conversation=" + cid);
     await expect(page.getByRole("button", { name: "Nova conversa", exact: true })).toHaveCount(0);
     const other = bob.getByRole("region", { name: "Conversa", exact: true });
     await expect(other.getByRole("status")).toHaveText("Conectado");
@@ -51,6 +51,7 @@ test("chat entrega mensagem, responde e recupera ao reconectar", async ({ page, 
     await other.getByLabel("Mensagem", { exact: true }).fill(reply);
     await other.getByRole("button", { name: "Enviar mensagem" }).click();
     await expect(room.getByText(reply, { exact: true })).toBeVisible();
+    await room.getByLabel("Opções da conversa").click();
     await room.getByRole("button", { name: "Reconectar", exact: true }).click();
     await expect(room.getByRole("status")).toHaveText("Conectado");
     await expect(room.getByText(greeting, { exact: true })).toHaveCount(1);
@@ -93,11 +94,11 @@ test("mensagem pelo perfil encaminha visitante ao login e retorna ao perfil", as
   const profile = "/usuario/" + recipient.user_id;
   await page.goto(profile);
   await page.getByRole("button", { name: "Enviar mensagem", exact: true }).click();
-  await expect(page).toHaveURL("http://localhost:3000/login?next=" + encodeURIComponent(profile));
+  await expect(page).toHaveURL((process.env.E2E_BASE_URL ?? "http://localhost:3000") + "/login?next=" + encodeURIComponent(profile));
   await page.getByLabel("E-mail").fill("e2e_alice@example.com");
   await page.getByLabel("Senha", { exact: true }).fill(demoPassword);
   await page.getByRole("button", { name: "Entrar", exact: true }).click();
-  await expect(page).toHaveURL("http://localhost:3000" + profile);
+  await expect(page).toHaveURL((process.env.E2E_BASE_URL ?? "http://localhost:3000") + profile);
   await page.getByRole("button", { name: "Enviar mensagem", exact: true }).click();
   await expect(page.getByRole("region", { name: "Conversa", exact: true }).getByRole("heading", { name: "@e2e_bob" })).toBeVisible();
 });
@@ -118,7 +119,7 @@ test("SEO inicial, apoio, autoria e transição público/privado", async ({ page
     const staticContext = await browser.newContext({ javaScriptEnabled: false });
     try {
       const staticPage = await staticContext.newPage();
-      await staticPage.goto("http://localhost:3000/projeto/" + id);
+      await staticPage.goto((process.env.E2E_BASE_URL ?? "http://localhost:3000") + "/projeto/" + id);
       await expect(staticPage.getByRole("heading", { name, exact: true })).toBeVisible();
       await expect(staticPage.getByText("Responsáveis: Alice e Bob", { exact: true })).toBeVisible();
     } finally { await staticContext.close(); }
@@ -141,12 +142,15 @@ test("SEO inicial, apoio, autoria e transição público/privado", async ({ page
 test("administrador com MFA modera e registra ações; painel funciona no celular", async ({ page }, info) => {
   test.skip(info.project.name !== "desktop", "Mesmo fluxo administrativo inspeciona três larguras na mesma sessão MFA");
   test.skip(!process.env.E2E_ADMIN_SECRET || !process.env.E2E_ADMIN_PASSWORD, "Configure a conta administrativa local com MFA");
+  test.setTimeout(90000);
+  await page.waitForTimeout(31000-(Date.now()%30000)); // Cada login MFA usa uma janela nova; nunca reutiliza o código da reautenticação anterior.
   await login(page, "e2e_alice");
   const current = await (await page.request.get(api + "/auth/me")).json();
   const post = await (await page.request.post(api + "/posts", { headers, data: { content: "Publicação E2E para moderação " + Date.now() } })).json();
   await page.goto("/login");
   await page.getByLabel("E-mail").fill(process.env.E2E_ADMIN_EMAIL ?? "admin.demo@example.com");
   await page.getByLabel("Senha", { exact: true }).fill(process.env.E2E_ADMIN_PASSWORD!);
+  await page.getByLabel("Uso um aplicativo autenticador").check();
   await page.getByLabel("Código do autenticador (se ativado)").fill(otp(process.env.E2E_ADMIN_SECRET!));
   await page.getByRole("button", { name: "Entrar", exact: true }).click();
   await expect(page).toHaveURL(/\/feed$/);
@@ -162,17 +166,20 @@ test("administrador com MFA modera e registra ações; painel funciona no celula
     await page.screenshot({ path: "../docs/thiago/admin-users-" + width + ".png", fullPage: true });
   }
   await page.setViewportSize({ width: 1366, height: 900 });
+  await userRow.getByRole("button", { name: "Gerenciar conta" }).click();
   await userRow.getByLabel("Conta ativa").uncheck();
   await userForm.getByLabel("Motivo").fill("Teste de suspensão administrativa");
   await userForm.getByRole("button", { name: "Salvar usuário" }).click();
   await expect(userRow.getByLabel("Conta ativa")).not.toBeChecked();
+  await userRow.getByRole("button", { name: "Gerenciar conta" }).click();
   await userRow.getByLabel("Conta ativa").check();
   await userForm.getByLabel("Motivo").fill("Teste de reativação administrativa");
   await userForm.getByRole("button", { name: "Salvar usuário" }).click();
   await expect(userRow.getByLabel("Conta ativa")).toBeChecked();
   await page.getByRole("button", { name: "Moderação", exact: true }).click();
   await expect(page.getByRole("table", { name: "Moderação de publicações", exact: true })).toBeVisible();
-  const moderation = page.getByRole("form", { name: "Moderar publicação " + post.post_id, exact: true });
+  const moderation = page.getByRole("form", { name: "Moderar publicação " + post.post_id, exact: true, includeHidden: true });
+  await page.getByRole("row").filter({has:moderation}).getByRole("button",{name:"Revisar publicação"}).click();
   await moderation.getByLabel("Motivo").fill("Teste de moderação auditada " + post.post_id);
   await moderation.getByRole("button", { name: "Ocultar publicação" }).click();
   await expect(moderation.getByRole("button", { name: "Restaurar publicação" })).toBeVisible();

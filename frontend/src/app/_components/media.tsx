@@ -1,5 +1,6 @@
 "use client";
 
+import { ImagePlus } from "lucide-react";
 import { useRef, useState } from "react";
 
 import { mediaUrl, uploadImage, type Author, type User } from "@/lib/api";
@@ -36,7 +37,7 @@ export function Avatar({
 type ImagePickerProps = {
   value: string | null;
   onChange: (url: string | null) => void;
-  variant?: "cover" | "square";
+  variant?: "cover" | "square" | "compact";
   hint?: string;
   label?: string;
   onBusyChange?: (busy: boolean) => void;
@@ -67,7 +68,7 @@ export function ImagePicker({ value, onChange, variant = "cover", hint, label = 
     }
   }
 
-  const box = variant === "square" ? "w-24 h-24 rounded-2xl" : "w-full h-32 rounded-xl";
+  const box = variant === "compact" ? "w-auto h-10 rounded-xl px-4 gap-2" : variant === "square" ? "w-24 h-24 rounded-2xl" : "w-full h-32 rounded-xl";
 
   return (
     <div>
@@ -87,11 +88,11 @@ export function ImagePicker({ value, onChange, variant = "cover", hint, label = 
             </span>
           </>
         ) : (
-          <span className="text-xs font-semibold">{busy ? "Enviando..." : "Enviar imagem"}</span>
+          <><ImagePlus size={16} aria-hidden="true"/><span className="text-xs font-semibold">{busy ? "Enviando..." : variant === "compact" ? "Adicionar imagem" : "Enviar imagem"}</span></>
         )}
       </button>
       <div className="flex items-center gap-3 mt-1.5">
-        {hint && <p className="text-xs text-gray-400">{hint}</p>}
+        {hint && variant !== "compact" && <p className="text-xs text-gray-400">{hint}</p>}
         {value && (
           <button
             type="button"
@@ -104,7 +105,7 @@ export function ImagePicker({ value, onChange, variant = "cover", hint, label = 
           </button>
         )}
       </div>
-      <p className="mt-2 text-xs text-gray-600">JPEG, PNG, WebP ou GIF estático. Máximo de 5 MB.</p>
+      {variant !== "compact" && <p className="mt-2 text-xs text-gray-600">JPEG, PNG, WebP ou GIF estático. Máximo de 5 MB.</p>}
       {error && <p role="alert" className="text-xs text-accent mt-1">{error}</p>}
       <input aria-label={label} ref={inputRef} type="file" accept="image/jpeg,image/png,image/webp,image/gif" onChange={handleFile} className="hidden" />
     </div>

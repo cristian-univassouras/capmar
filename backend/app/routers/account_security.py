@@ -78,6 +78,7 @@ def password(payload: Credentials, db: Session = Depends(get_db, scope="function
         raise HTTPException(422, str(exc)) from exc
     db.refresh(user, with_for_update=True)
     user.user_password = hash_password(payload.new_password)
+    db.execute(delete(models.PasswordReset).where(models.PasswordReset.user_id == user.user_id))
     db.execute(delete(models.AuthSession).where(models.AuthSession.user_id == user.user_id))
     record(db, user.user_id, "password.changed", "user", user.user_id, "Senha alterada; todas as sessões revogadas")
     return {"detail": "Senha alterada. Entre novamente."}

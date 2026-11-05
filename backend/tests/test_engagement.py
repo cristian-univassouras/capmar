@@ -94,6 +94,23 @@ def test_mfa_setup_confirmation_replay_and_password(client):
         assert db.get(models.User, user["user_id"]).mfa_secret != secret
 
 
+def test_role_promotion_demotion_with_mfa_revokes_old_sessions():
+    admin, _, _ = make_admin("managingadmin")
+    other, user = client_for("promoted")
+    secret = generate_secret()
+    with database.SessionLocal.begin() as db:
+        db.get(models.User, user["user_id"]).mfa_secret = cipher().encrypt(secret.encode()).decode()
+    payload = {"role": "admin", "is_active": True, "reason": "Promoção de teste com MFA"}
+    assert admin.patch(f'/admin/users/{user["user_id"]}', json=payload).status_code == 200
+    assert other.get("/auth/me").status_code == 401
+    assert other.post("/auth/login", json={"email": "promoted@example.com", "password": "correct-password", "otp": totp(secret, int(time.time()) // 30 - 1)}).status_code == 200
+    assert other.get("/admin/users").status_code == 200
+    assert admin.patch(f'/admin/users/{user["user_id"]}', json={**payload, "role": "user", "reason": "Rebaixamento de teste"}).status_code == 200
+    assert other.get("/auth/me").status_code == 401
+    assert other.post("/auth/login", json={"email": "promoted@example.com", "password": "correct-password", "otp": totp(secret)}).status_code == 200
+    assert other.get("/admin/users").status_code == 403
+
+
 def test_moderation_filters_feed_and_media_and_audit(client):
     account(client)
     import io

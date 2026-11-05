@@ -10,7 +10,7 @@ Este repositório está dividido em dois módulos principais. Recomendamos forte
 
 ## 👥 Equipe
 Projeto de extensão desenvolvido por estudantes de Engenharia de Software da Universidade de Vassouras - Campus Maricá:
-- **Backend:** Felipe Sodré e Andrey Violante
+- **Backend:** Felipe Sodré, Andrey Violante e Thiago Calvet
 - **Frontend:** Cristian Barboza e Endriel Almeida
 
 ## 🚀 Deploy e Infraestrutura

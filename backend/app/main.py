@@ -9,6 +9,7 @@ from .config import settings
 from .database import engine
 from .middleware import RequestProtection
 from .limits import consume, client_ip
+from .recovery import router as recovery_router
 from .routers import admin, account_security, chat, auth, categories, posts, projects, teams, uploads, users
 
 
@@ -16,12 +17,13 @@ from .routers import admin, account_security, chat, auth, categories, posts, pro
 async def lifespan(app: FastAPI):
     # DDL e seeds pertencem ao comando de migração, nunca ao usuário da aplicação.
     with engine.connect() as conn:
-        if conn.scalar(text("SELECT version_num FROM alembic_version")) != "0005_profile_team_chat":
+        if conn.scalar(text("SELECT version_num FROM alembic_version")) != "0006_portfolio_recovery":
             raise RuntimeError("Banco desatualizado: execute alembic upgrade head com a credencial de migração")
     yield
 
 
 app = FastAPI(title="CapMar API", version="0.2.0", lifespan=lifespan)
+app.include_router(recovery_router)
 
 
 @app.middleware("http")

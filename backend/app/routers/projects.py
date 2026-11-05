@@ -6,6 +6,7 @@ from ..database import get_db
 from ..deps import get_current_user, get_current_user_optional
 from ..access import require_project
 from ..media import bind_media
+from ..presentation import project_media
 
 router = APIRouter(prefix="/projects", tags=["projects"])
 
@@ -31,13 +32,14 @@ def list_projects(
     category_id: int | None = Query(None, ge=1),
     public_only: bool = False,
     owner_id: int | None = Query(None, ge=1),
+    writable_only: bool = False,
     db: Session = Depends(get_db, scope="function"),
     user: models.User | None = Depends(get_current_user_optional),
 ):
     _validate_search(q)
     return [_annotate(p, user, db) for p in crud.list_projects(
         db, skip=skip, limit=limit, user=user, q=q, category_id=category_id,
-        public_only=public_only, owner_id=owner_id)]
+        public_only=public_only, owner_id=owner_id, writable_only=writable_only)]
 
 
 def _validate_search(q):
@@ -49,10 +51,11 @@ def _validate_search(q):
 def search_projects(skip: int = Query(0, ge=0, le=10000), limit: int = Query(12, ge=1, le=100),
                     q: str = Query("", max_length=100), category_id: int | None = Query(None, ge=1),
                     public_only: bool = False, owner_id: int | None = Query(None, ge=1),
+                    writable_only: bool = False,
                     db: Session = Depends(get_db, scope="function"),
                     user: models.User | None = Depends(get_current_user_optional)):
     _validate_search(q)
-    filters = dict(user=user, q=q, category_id=category_id, public_only=public_only, owner_id=owner_id)
+    filters = dict(user=user, q=q, category_id=category_id, public_only=public_only, owner_id=owner_id, writable_only=writable_only)
     return schemas.ProjectPage(
         items=[_annotate(p, user, db) for p in crud.list_projects(db, skip=skip, limit=limit, **filters)],
         total=crud.count_projects(db, **filters), skip=skip, limit=limit)
@@ -68,7 +71,7 @@ def create_project(
         raise HTTPException(status_code=400, detail="Categoria não encontrada")
     _validate_authorship(payload)
     project = crud.create_project(db, payload, owner_id=user.user_id)
-    bind_media(db, user, "project", project.project_id, [project.cover_url, project.logo_url])
+    bind_media(db, user, "project", project.project_id, project_media(project))
     return _annotate(project, user, db)
 
 
@@ -99,7 +102,7 @@ def update_project(
         raise HTTPException(status_code=400, detail="Categoria não encontrada")
     _validate_authorship(payload, project)
     project = crud.update_project(db, project, payload)
-    bind_media(db, user, "project", project.project_id, [project.cover_url, project.logo_url])
+    bind_media(db, user, "project", project.project_id, project_media(project))
     return _annotate(project, user, db)
 
 

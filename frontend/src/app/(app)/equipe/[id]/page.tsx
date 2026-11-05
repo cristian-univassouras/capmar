@@ -127,13 +127,13 @@ export default function EquipePage() {
   }
 
   return (
-    <div className="max-w-3xl mx-auto space-y-6">
+    <div className="max-w-4xl mx-auto space-y-6">
       <Link href="/equipes" className="text-sm text-gray-500 hover:text-primary inline-flex items-center gap-1">
         ← Equipes
       </Link>
 
       <div className="bg-white rounded-2xl border border-gray-100 overflow-hidden">
-        <div className="h-32 bg-gradient-to-r from-accent/80 to-primary" />
+        <div className="h-20 bg-gradient-to-r from-accent/80 to-primary" />
         <div className="px-6 pb-6">
           <div className="flex items-end justify-between -mt-10 mb-4">
             <div className="w-16 h-16 rounded-2xl bg-white border-4 border-white shadow-md flex items-center justify-center text-accent font-black text-xl font-heading shrink-0">
@@ -163,9 +163,9 @@ export default function EquipePage() {
           {editing ? (
             <form onSubmit={handleSave} className="space-y-4">
               <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-1.5">Nome da equipe</label>
+                <label htmlFor="team_name" className="block text-sm font-semibold text-gray-700 mb-1.5">Nome da equipe</label>
                 <input
-                  name="team_name"
+                  id="team_name" name="team_name"
                   defaultValue={team.team_name}
                   required
                   maxLength={255}
@@ -173,9 +173,9 @@ export default function EquipePage() {
                 />
               </div>
               <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-1.5">Propósito</label>
+                <label htmlFor="purpose" className="block text-sm font-semibold text-gray-700 mb-1.5">Propósito</label>
                 <textarea
-                  name="purpose"
+                  id="purpose" name="purpose"
                   defaultValue={team.purpose ?? ""}
                   rows={3}
                   className="w-full rounded-xl border border-gray-200 px-4 py-2.5 outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 resize-none"
@@ -240,9 +240,10 @@ export default function EquipePage() {
           {isLeader && (
             <div className="bg-white rounded-2xl border border-gray-100 p-4 flex gap-2">
               <select
+                aria-label="Usuário para adicionar à equipe"
                 value={addUserId}
                 onChange={(e) => setAddUserId(e.target.value)}
-                className="flex-1 rounded-xl border border-gray-200 px-4 py-2.5 outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 bg-white text-sm"
+                className="min-w-0 flex-1 rounded-xl border border-gray-200 px-4 py-2.5 outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 bg-white text-sm"
               >
                 <option value="">
                   {addableUsers.length ? "Selecione um usuário..." : "Todos já são membros"}

@@ -5,7 +5,8 @@ import { useEffect, useState } from "react";
 
 import {
   createTeam,
-  listProjects,
+  searchProjects,
+  getMe,
   listTeams,
   type Project,
   type Team,
@@ -23,10 +24,10 @@ export default function EquipesPage() {
   const [formError, setFormError] = useState<string | null>(null);
 
   useEffect(() => {
-    Promise.all([listTeams(), listProjects()])
+    Promise.all([listTeams(), getMe().then((me) => searchProjects({ owner_id: me.user_id, limit: 100 }))])
       .then(([t, p]) => {
         setTeams(t);
-        setProjects(p);
+        setProjects(p.items);
       })
       .catch((err) => setLoadError(err instanceof Error ? err.message : "Erro ao carregar."))
       .finally(() => setLoading(false));
@@ -59,11 +60,11 @@ export default function EquipesPage() {
   }
 
   return (
-    <div className="max-w-4xl mx-auto space-y-6">
-      <div className="flex items-center justify-between gap-4">
+    <div className="max-w-6xl mx-auto space-y-6">
+      <div className="ui-page-heading">
         <div>
-          <h1 className="font-heading font-black text-3xl text-primary uppercase tracking-tighter">Equipes</h1>
-          <p className="text-sm text-gray-500 mt-1">Organize as equipes dos projetos.</p>
+          <h1 className="font-heading font-bold text-3xl text-secondary tracking-tight">Equipes</h1>
+          <p className="text-sm text-gray-500 mt-1">Encontre os grupos que dão vida aos projetos da comunidade.</p>
         </div>
         <button
           onClick={() => {
@@ -79,9 +80,9 @@ export default function EquipesPage() {
       {formOpen && (
         <form onSubmit={handleCreate} className="bg-white rounded-2xl border border-gray-100 p-6 space-y-4">
           <div>
-            <label className="block text-sm font-semibold text-gray-700 mb-1.5">Nome da equipe</label>
+            <label htmlFor="team_name" className="block text-sm font-semibold text-gray-700 mb-1.5">Nome da equipe</label>
             <input
-              name="team_name"
+              id="team_name" name="team_name"
               required
               maxLength={255}
               placeholder="Ex: Equipe Verde"
@@ -89,18 +90,18 @@ export default function EquipesPage() {
             />
           </div>
           <div>
-            <label className="block text-sm font-semibold text-gray-700 mb-1.5">Propósito</label>
+            <label htmlFor="purpose" className="block text-sm font-semibold text-gray-700 mb-1.5">Propósito</label>
             <textarea
-              name="purpose"
+              id="purpose" name="purpose"
               rows={2}
               placeholder="Qual o objetivo da equipe?"
               className="w-full rounded-xl border border-gray-200 px-4 py-2.5 outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 resize-none"
             />
           </div>
           <div>
-            <label className="block text-sm font-semibold text-gray-700 mb-1.5">Projeto</label>
+            <label htmlFor="project_id" className="block text-sm font-semibold text-gray-700 mb-1.5">Projeto</label>
             <select
-              name="project_id"
+              id="project_id" name="project_id"
               defaultValue=""
               required
               className="w-full rounded-xl border border-gray-200 px-4 py-2.5 outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 bg-white"
@@ -122,7 +123,7 @@ export default function EquipesPage() {
           </div>
 
           {formError && (
-            <p className="rounded-xl bg-accent/10 px-4 py-2.5 text-sm font-medium text-accent">{formError}</p>
+            <p className="rounded-xl bg-primary/5 px-4 py-2.5 text-sm font-medium text-accent">{formError}</p>
           )}
 
           <div className="flex justify-end">
@@ -148,7 +149,7 @@ export default function EquipesPage() {
           Nenhuma equipe cadastrada ainda.
         </div>
       ) : (
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-5">
           {teams.map((team) => (
             <Link
               key={team.team_id}
@@ -156,7 +157,7 @@ export default function EquipesPage() {
               className="bg-white rounded-2xl border border-gray-100 p-5 flex flex-col gap-3 hover:border-primary/30 transition-colors"
             >
               <div className="flex items-center gap-3">
-                <div className="w-11 h-11 rounded-xl bg-accent/10 flex items-center justify-center text-accent font-heading font-black shrink-0">
+                <div className="w-11 h-11 rounded-xl bg-primary/5 flex items-center justify-center text-primary font-heading font-black shrink-0">
                   {team.team_name.slice(0, 2).toUpperCase()}
                 </div>
                 <div className="min-w-0">

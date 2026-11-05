@@ -1,5 +1,7 @@
 "use client";
+/* eslint-disable @next/next/no-img-element -- Mídias autenticadas do perfil. */
 
+import Link from "next/link";
 import { useEffect, useState } from "react";
 
 import {
@@ -21,6 +23,7 @@ export default function PerfilPage() {
 
   const [editing, setEditing] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [uploading, setUploading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
 
@@ -38,7 +41,7 @@ export default function PerfilPage() {
 
   async function handleSave(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
-    if (!user) return;
+    if (!user || saving || uploading) return;
     setError(null);
     setSaving(true);
     const form = new FormData(e.currentTarget);
@@ -73,15 +76,14 @@ export default function PerfilPage() {
   }
 
   return (
-    <div className="max-w-3xl mx-auto space-y-6">
+    <div className="max-w-4xl mx-auto space-y-6"><div className="ui-page-heading"><div><span className="ui-eyebrow">Minha conta</span><h2 className="mt-2 font-heading text-2xl font-bold text-secondary">Seu espaço na comunidade</h2><p>Apresente quem está por trás das suas ideias.</p></div><Link href={"/usuario/"+user.user_id} className="ui-button">Ver perfil público ↗</Link></div>
       {/* Cartão do perfil */}
       <div className="bg-white rounded-2xl border border-gray-100 overflow-hidden">
-        <div className="h-36 bg-gradient-to-r from-primary to-secondary" />
+        <div className="h-24 bg-gradient-to-r from-primary to-secondary" />
         <div className="px-6 pb-6">
           <div className="flex items-end justify-between -mt-12 mb-4">
             <div className="w-20 h-20 rounded-2xl bg-white border-4 border-white shadow-md overflow-hidden flex items-center justify-center text-primary font-black text-2xl font-heading">
               {user.avatar_url ? (
-                // eslint-disable-next-line @next/next/no-img-element
                 <img src={mediaUrl(user.avatar_url)} alt={user.username} className="w-full h-full object-cover" />
               ) : (
                 initialOf(user)
@@ -104,22 +106,22 @@ export default function PerfilPage() {
             <form onSubmit={handleSave} className="space-y-4">
               <div>
                 <label className="block text-sm font-semibold text-gray-700 mb-1.5">Foto de perfil</label>
-                <ImagePicker value={avatarUrl} onChange={setAvatarUrl} variant="square" />
+                <ImagePicker label="Foto de perfil" value={avatarUrl} onChange={setAvatarUrl} onBusyChange={setUploading} variant="square" />
               </div>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-semibold text-gray-700 mb-1.5">Nome</label>
+                  <label htmlFor="first_name" className="block text-sm font-semibold text-gray-700 mb-1.5">Nome</label>
                   <input
-                    name="first_name"
+                    id="first_name" name="first_name"
                     defaultValue={user.first_name ?? ""}
                     maxLength={20}
                     className="w-full rounded-xl border border-gray-200 px-4 py-2.5 outline-none focus:border-primary focus:ring-2 focus:ring-primary/20"
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-semibold text-gray-700 mb-1.5">Sobrenome</label>
+                  <label htmlFor="last_name" className="block text-sm font-semibold text-gray-700 mb-1.5">Sobrenome</label>
                   <input
-                    name="last_name"
+                    id="last_name" name="last_name"
                     defaultValue={user.last_name ?? ""}
                     maxLength={100}
                     className="w-full rounded-xl border border-gray-200 px-4 py-2.5 outline-none focus:border-primary focus:ring-2 focus:ring-primary/20"
@@ -127,9 +129,9 @@ export default function PerfilPage() {
                 </div>
               </div>
               <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-1.5">Nome de usuário</label>
+                <label htmlFor="username" className="block text-sm font-semibold text-gray-700 mb-1.5">Nome de usuário</label>
                 <input
-                  name="username"
+                  id="username" name="username"
                   defaultValue={user.username}
                   minLength={3}
                   maxLength={20}
@@ -138,24 +140,25 @@ export default function PerfilPage() {
                 />
               </div>
               <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-1.5">E-mail</label>
+                <label htmlFor="email" className="block text-sm font-semibold text-gray-700 mb-1.5">E-mail</label>
                 <input
-                  name="email"
+                  id="email" name="email"
                   type="email"
                   defaultValue={user.email}
+                  maxLength={50}
                   required
                   className="w-full rounded-xl border border-gray-200 px-4 py-2.5 outline-none focus:border-primary focus:ring-2 focus:ring-primary/20"
                 />
               </div>
 
               {error && (
-                <p className="rounded-xl bg-accent/10 px-4 py-2.5 text-sm font-medium text-accent">{error}</p>
+                <p role="alert" className="rounded-xl bg-accent/10 px-4 py-2.5 text-sm font-medium text-accent">{error}</p>
               )}
 
               <div className="flex gap-2">
                 <button
                   type="submit"
-                  disabled={saving}
+                  disabled={saving || uploading}
                   className="bg-primary text-white text-sm font-semibold px-6 py-2.5 rounded-xl hover:bg-primary/90 transition-colors disabled:opacity-60"
                 >
                   {saving ? "Salvando..." : "Salvar"}
@@ -176,11 +179,11 @@ export default function PerfilPage() {
                 @{user.username} · {user.email}
               </p>
 
-              <div className="flex gap-6 mt-5">
+              <div className="flex flex-wrap items-center gap-6 mt-5">
                 <div className="text-center">
                   <p className="font-heading font-black text-xl text-foreground">{posts.length}</p>
-                  <p className="text-xs text-gray-400">Publicações</p>
-                </div>
+                  <p className="text-xs text-gray-400">Publicações recentes</p>
+                </div><Link href="/projetos" className="ui-button">Meus projetos</Link><Link href="/seguranca" className="text-sm font-semibold text-primary">Segurança da conta</Link>
               </div>
             </>
           )}
@@ -199,9 +202,8 @@ export default function PerfilPage() {
             <div key={post.post_id} className="bg-white rounded-2xl border border-gray-100 p-5 space-y-2">
               <p className="text-xs text-gray-400">{formatDate(post.created_at)}</p>
               <p className="text-sm text-gray-700 leading-relaxed whitespace-pre-wrap">{post.content}</p>
-              {post.project && (
-                <p className="text-xs font-semibold text-primary">↳ {post.project.name}</p>
-              )}
+              {post.image_url && <img src={mediaUrl(post.image_url)} alt="Imagem da publicação" className="max-h-96 w-full rounded-xl object-contain bg-gray-50"/>}
+              {post.project && <Link href={"/projeto/"+post.project.project_id} className="inline-block rounded-lg bg-primary/5 px-3 py-2 text-xs font-semibold text-primary">↳ {post.project.name}</Link>}
             </div>
           ))
         )}

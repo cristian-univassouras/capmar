@@ -191,6 +191,7 @@ def test_patch_validation(client, payload):
 
 
 def test_password_utf8_and_limits(client):
+    assert client.post("/auth/register", json={"username": "short", "email": "short@example.com", "password": "short-pass"}).status_code == 422
     prefix = "a" * 72
     hashed = hash_password(prefix)
     assert verify_password(prefix, hashed)

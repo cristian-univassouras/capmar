@@ -20,7 +20,7 @@ class RequestProtection:
         if unsafe:
             if headers.get("x-csrf-protection") != "1":
                 return await JSONResponse({"detail": "Cabeçalho CSRF obrigatório"}, 403)(scope, receive, send)
-            is_upload = scope["path"].rstrip("/") == "/upload"
+            is_upload = scope["path"].rstrip("/") in ("/upload", "/upload/document")
             content_type = headers.get("content-type", "").split(";")[0].lower()
             if scope["method"] in ("POST", "PUT", "PATCH") and scope["path"] != "/auth/logout":
                 expected = "multipart/form-data" if is_upload else "application/json"

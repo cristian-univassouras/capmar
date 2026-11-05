@@ -10,6 +10,11 @@ services:
       SECRET_KEY: ${SECRET_KEY:?Defina um segredo aleatório com pelo menos 32 bytes}
       CORS_ORIGINS: ${CORS_ORIGINS:?Defina origens HTTPS explícitas}
       COOKIE_SECURE: "true"
+      SITE_URL: ${SITE_URL:?Defina a origem pública HTTPS}
+      SMTP_HOST: ${SMTP_HOST:?Defina o servidor SMTP}
+      SMTP_PORT: ${SMTP_PORT:-587}
+      SMTP_STARTTLS: "true"
+      SMTP_FROM: ${SMTP_FROM:?Defina o remetente autorizado}
       COOKIE_SAMESITE: ${COOKIE_SAMESITE:-lax}
       FORWARDED_ALLOW_IPS: ${FORWARDED_ALLOW_IPS:?Defina somente IPs dos proxies confiáveis}
   migrate:

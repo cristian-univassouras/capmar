@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import { ApiError, clearStoredUser, getMe, saveUser } from "@/lib/api";
+import { safeAuthDestination } from "@/lib/auth-navigation";
 
 export default function AuthGuard({ children }: { children: React.ReactNode }) {
   const router = useRouter();
@@ -16,7 +17,8 @@ export default function AuthGuard({ children }: { children: React.ReactNode }) {
     function expired() {
       clearStoredUser();
       setAuthed(false);
-      router.replace("/login?next=" + encodeURIComponent(pathname));
+      const destination = safeAuthDestination(pathname + window.location.search) ?? pathname;
+      router.replace("/login?next=" + encodeURIComponent(destination));
     }
     async function check() {
       try {
@@ -33,11 +35,19 @@ export default function AuthGuard({ children }: { children: React.ReactNode }) {
     }
     window.addEventListener("capmar-session-expired", expired);
     window.addEventListener("focus", check);
+    function stored(event: StorageEvent) {
+      if (event.key === "capmar_user" || event.key === null) {
+        if (!event.newValue) expired();
+        else { setAuthed(false); void check(); }
+      }
+    }
+    window.addEventListener("storage", stored);
     void check();
     return () => {
       active = false;
       window.removeEventListener("capmar-session-expired", expired);
       window.removeEventListener("focus", check);
+      window.removeEventListener("storage", stored);
     };
   }, [router, pathname, attempt]);
 

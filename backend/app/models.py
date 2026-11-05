@@ -10,6 +10,7 @@ from sqlalchemy import (
     LargeBinary,
     BigInteger,
     DateTime,
+    JSON,
     UniqueConstraint,
 )
 from sqlalchemy.orm import relationship, deferred, column_property
@@ -86,6 +87,9 @@ class Project(Base):
     responsible_names = Column(String(500), nullable=True)
     funding_url = Column(String(2048), nullable=True)
     funding_description = Column(String(300), nullable=True)
+    accent = Column(String(16), nullable=False, default="roxo", server_default="roxo")
+    portfolio = Column(JSON, nullable=False, default=list, server_default="[]")
+    partners = Column(JSON, nullable=False, default=list, server_default="[]")
 
     category = relationship("Category", back_populates="projects")
     owner = relationship("User", foreign_keys=[owner_id])
@@ -206,6 +210,14 @@ class RateBucket(Base):
     key = Column(String(64), primary_key=True)
     window = Column(Integer, primary_key=True)
     count = Column(Integer, nullable=False)
+
+
+class PasswordReset(Base):
+    __tablename__ = "password_resets"
+    token_hash = Column(String(64), primary_key=True)
+    user_id = Column(Integer, ForeignKey("users.user_id", ondelete="CASCADE"), nullable=False, index=True)
+    email = Column(String(50), nullable=False)
+    expires_at = Column(Integer, nullable=False, index=True)
 
 
 class AuditLog(Base):

@@ -72,3 +72,24 @@ test("401 limpa cache, sinaliza expiração e preserva status do erro", async ()
   assert.equal(expired, true);
   assert.equal(values.has("capmar_user"), false);
 });
+
+test("login inválido preserva a mensagem de credenciais sem simular sessão expirada", async () => {
+  let expired = false;
+  window.addEventListener("capmar-session-expired", () => { expired = true; });
+  globalThis.fetch = async () => Response.json({ detail: "E-mail ou senha inválidos" }, { status: 401 });
+  await assert.rejects(api.login({ email: user.email, password: "wrong" }), /E-mail ou senha inválidos/);
+  assert.equal(expired, false);
+});
+
+test("salvar e limpar perfil avisam as telas abertas", () => {
+  let changes = 0;
+  window.addEventListener("capmar-user-changed", () => changes++);
+  api.saveUser(user);
+  api.clearStoredUser();
+  assert.equal(changes, 2);
+});
+
+test("validação estruturada de cadastro aparece em português", async () => {
+  globalThis.fetch = async () => Response.json({ detail: [{ loc: ["body", "username"], type: "string_too_long", msg: "String should have at most 20 characters", ctx: { max_length: 20 } }] }, { status: 422 });
+  await assert.rejects(api.register({ username: "x".repeat(21), email: user.email, password: "correct-password" }), /Nome de usuário: use no máximo 20 caracteres/);
+});

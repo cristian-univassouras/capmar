@@ -1,12 +1,13 @@
 "use client";
 
-import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 
 import AuthShell from "@/app/_auth/AuthShell";
 import { Field, SubmitButton } from "@/app/_auth/ui";
 import { register, saveSession } from "@/lib/api";
+import AuthSwitchLink from "@/app/_auth/AuthSwitchLink";
+import { currentAuthDestination } from "@/lib/auth-navigation";
 
 export default function RegisterPage() {
   const router = useRouter();
@@ -36,8 +37,7 @@ export default function RegisterPage() {
         password,
       });
       saveSession(auth);
-      const next = new URLSearchParams(window.location.search).get("next");
-      const safeNext = next && /^\/(usuario\/\d+|projeto\/\d+|projetos|feed|perfil|equipes|equipe\/\d+)$/.test(next) ? next : "/feed";
+      const safeNext = currentAuthDestination() ?? "/feed";
       router.push(safeNext);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Erro ao criar conta.");
@@ -53,9 +53,9 @@ export default function RegisterPage() {
       footer={
         <>
           Já tem uma conta?{" "}
-          <Link href="/login" className="font-semibold text-primary hover:underline">
+          <AuthSwitchLink href="/login">
             Entrar
-          </Link>
+          </AuthSwitchLink>
         </>
       }
     >
@@ -84,6 +84,7 @@ export default function RegisterPage() {
           name="username"
           label="Nome de usuário"
           placeholder="maria.silva"
+          hint="De 3 a 20 caracteres."
           autoComplete="username"
           minLength={3}
           maxLength={20}
@@ -96,6 +97,7 @@ export default function RegisterPage() {
           label="E-mail"
           placeholder="voce@email.com"
           autoComplete="email"
+          maxLength={50}
           required
         />
         <Field
@@ -103,9 +105,11 @@ export default function RegisterPage() {
           name="password"
           type="password"
           label="Senha"
-          placeholder="Mínimo 6 caracteres"
+          placeholder="Mínimo 12 caracteres"
+          hint="Use uma senha longa e exclusiva para esta conta."
           autoComplete="new-password"
-          minLength={6}
+          minLength={12}
+          maxLength={72}
           required
         />
         <Field
@@ -115,12 +119,13 @@ export default function RegisterPage() {
           label="Confirmar senha"
           placeholder="Repita a senha"
           autoComplete="new-password"
-          minLength={6}
+          minLength={12}
+          maxLength={72}
           required
         />
 
         {error && (
-          <p className="rounded-2xl bg-accent/10 px-4 py-3 text-sm font-medium text-accent">
+          <p role="alert" className="rounded-2xl bg-accent/10 px-4 py-3 text-sm font-medium text-accent">
             {error}
           </p>
         )}

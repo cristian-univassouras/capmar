@@ -49,10 +49,24 @@ export class ApiError extends Error {
   constructor(message: string, public status: number) { super(message); }
 }
 
+function validationMessage(detail: unknown, fallback: string): string {
+  if (typeof detail === "string") return detail;
+  if (!Array.isArray(detail) || !detail[0]) return fallback;
+  const issue = detail[0];
+  const labels: Record<string, string> = { username: "Nome de usuário", email: "E-mail", password: "Senha", first_name: "Nome", last_name: "Sobrenome", content: "Texto", name: "Nome", otp: "Código do autenticador" };
+  const field = labels[String(issue.loc?.at(-1))] ?? "Campo";
+  if (issue.type === "string_too_long") return `${field}: use no máximo ${issue.ctx?.max_length} caracteres.`;
+  if (issue.type === "string_too_short") return `${field}: use pelo menos ${issue.ctx?.min_length} caracteres.`;
+  if (issue.type === "missing") return `${field} é obrigatório.`;
+  if (issue.type === "string_pattern_mismatch") return `${field} está em um formato inválido.`;
+  if (String(issue.msg).startsWith("Value error, ")) return String(issue.msg).slice(13);
+  return `${field} inválido. Confira o preenchimento e tente novamente.`;
+}
+
 async function apiFetch(input: RequestInfo | URL, init?: RequestInit): Promise<Response> {
   if (typeof window !== "undefined") localStorage.removeItem(LEGACY_TOKEN_KEY);
   const response = await fetch(input, { ...init, credentials: "include", cache: "no-store" });
-  if (response.status === 401) {
+  if (response.status === 401 && String(input) !== `${API_URL}/auth/login`) {
     clearStoredUser();
     if (typeof window !== "undefined") window.dispatchEvent(new Event("capmar-session-expired"));
     throw new ApiError("Sessão inválida ou expirada. Entre novamente.", 401);
@@ -78,11 +92,7 @@ export async function postJson<T>(path: string, body: unknown): Promise<T> {
     let detail = "Algo deu errado. Tente novamente.";
     try {
       const data = await res.json();
-      if (typeof data?.detail === "string") {
-        detail = data.detail;
-      } else if (Array.isArray(data?.detail) && data.detail[0]?.msg) {
-        detail = data.detail[0].msg;
-      }
+      detail = validationMessage(data?.detail, detail);
     } catch {
       /* corpo não-JSON: mantém mensagem padrão */
     }
@@ -107,7 +117,12 @@ export type Category = {
   description: string;
 };
 
+export type PortfolioItem = { kind: "image" | "pdf" | "video"; title: string; description: string; url: string };
+export type Partner = { name: string; description: string; url: string | null };
 export type Project = {
+  accent: "roxo" | "laranja" | "azul";
+  portfolio: PortfolioItem[];
+  partners: Partner[];
   authorship?: "individual" | "group";
   responsible_names?: string | null;
   funding_url?: string | null;
@@ -133,6 +148,10 @@ export type Project = {
 };
 
 export type ProjectPayload = {
+  template?: "classico" | "criativo" | "minimalista";
+  accent?: "roxo" | "laranja" | "azul";
+  portfolio?: PortfolioItem[];
+  partners?: Partner[];
   authorship?: "individual" | "group";
   responsible_names?: string | null;
   funding_url?: string | null;
@@ -155,12 +174,12 @@ export function mediaUrl(path: string | null | undefined): string | undefined {
   return `${API_URL}${path}`;
 }
 
-export async function uploadImage(file: File): Promise<string> {
+export async function uploadImage(file: File, document = false): Promise<string> {
   const form = new FormData();
   form.append("file", file);
   let res: Response;
   try {
-    res = await apiFetch(`${API_URL}/upload`, {
+    res = await apiFetch(`${API_URL}/upload${document ? "/document" : ""}`, {
       method: "POST",
       headers: { "X-CSRF-Protection": "1" },
       credentials: "include",
@@ -245,12 +264,11 @@ export function listProjects() {
 
 async function responseError(response: Response, fallback: string) {
   const body = await response.json().catch(() => null);
-  const detail = typeof body?.detail === "string" ? body.detail : body?.detail?.[0]?.msg;
-  return new ApiError(detail || fallback, response.status);
+  return new ApiError(validationMessage(body?.detail, fallback), response.status);
 }
 
 export type ProjectPage = { items: Project[]; total: number; skip: number; limit: number };
-export type ProjectSearch = { q?: string; category_id?: number; skip?: number; limit?: number; public_only?: boolean; owner_id?: number };
+export type ProjectSearch = { q?: string; category_id?: number; skip?: number; limit?: number; public_only?: boolean; owner_id?: number; writable_only?: boolean };
 
 export function searchProjects(filters: ProjectSearch = {}) {
   const query = new URLSearchParams();
@@ -309,7 +327,7 @@ export function unlikeProject(id: number) {
 }
 
 export function listComments(projectId: number, skip = 0) {
-  return getJson<Comment[]>(`/projects/${projectId}/comments?skip=${skip}&limit=100`);
+  return getJson<Comment[]>(`/projects/${projectId}/comments?skip=${skip}&limit=20`);
 }
 
 export function createComment(projectId: number, content: string) {
@@ -443,12 +461,13 @@ export function getMe() {
 export function saveSession(auth: AuthResponse) {
   if (typeof window === "undefined") return;
   localStorage.removeItem(LEGACY_TOKEN_KEY);
-  localStorage.setItem(USER_KEY, JSON.stringify(auth.user));
+  saveUser(auth.user);
 }
 
 export function saveUser(user: User) {
   if (typeof window === "undefined") return;
   localStorage.setItem(USER_KEY, JSON.stringify(user));
+  window.dispatchEvent(new Event("capmar-user-changed"));
 }
 
 export function getStoredUser(): User | null {
@@ -468,6 +487,7 @@ export function clearStoredUser() {
   if (typeof window === "undefined") return;
   localStorage.removeItem(USER_KEY);
   localStorage.removeItem(LEGACY_TOKEN_KEY);
+  window.dispatchEvent(new Event("capmar-user-changed"));
 }
 
 /**

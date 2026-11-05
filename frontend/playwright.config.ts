@@ -5,7 +5,7 @@ export default defineConfig({
   testDir: "./e2e", workers: 1, fullyParallel: false, timeout: 45000,
   outputDir: "../docs/thiago/playwright-results",
   reporter: [["list"], ["html", { outputFolder: "../docs/thiago/playwright-report", open: "never" }]],
-  use: { baseURL, browserName: "chromium", locale: "pt-BR", trace: "retain-on-failure", screenshot: "only-on-failure" },
+  use: { baseURL, browserName: "chromium", channel: "chrome", locale: "pt-BR", trace: "retain-on-failure", screenshot: "only-on-failure" },
   projects: [
     { name: "desktop", use: { viewport: { width: 1366, height: 900 } } },
     { name: "mobile-390", use: { viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true } },

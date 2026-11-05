@@ -1,133 +1,46 @@
 "use client";
-
-import { usePathname, useRouter } from "next/navigation";
 import Link from "next/link";
-import { useState } from "react";
-
+import { usePathname, useRouter } from "next/navigation";
+import { useEffect, useRef, useState } from "react";
+import { Compass, Newspaper, FolderKanban, Users, MessagesSquare, ShieldCheck, UserRound, HelpCircle, LogOut, MoreHorizontal, Search, X } from "lucide-react";
 import { clearSession, getStoredUser, type User } from "@/lib/api";
 import { Avatar } from "@/app/_components/media";
 
-const navItems = [
-  { href: "/home", label: "Home", icon: (
-    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" /></svg>
-  )},
-  { href: "/feed", label: "Feed", icon: (
-    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 20H5a2 2 0 01-2-2V6a2 2 0 012-2h10a2 2 0 012 2v1m2 13a2 2 0 01-2-2V7m2 13a2 2 0 002-2V9a2 2 0 00-2-2h-2m-4-3H9M7 16h6M7 8h6v4H7V8z" /></svg>
-  )},
-  { href: "/perfil", label: "Perfil", icon: (
-    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" /></svg>
-  )},
-  { href: "/projetos", label: "Projetos", icon: (
-    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" /></svg>
-  )},
-  { href: "/equipes", label: "Equipes", icon: (
-    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
-  )},
-];
-
-export default function AppShell({ children }: { children: React.ReactNode }) {
-  const pathname = usePathname();
-  const router = useRouter();
-  const [user] = useState<User | null>(getStoredUser);
-
-  async function handleLogout() {
-    try {
-      await clearSession();
-      router.replace("/login");
-    } catch {
-      window.alert("Não foi possível encerrar a sessão. Verifique a conexão e tente novamente.");
-    }
-  }
-
-  const displayName =
-    [user?.first_name, user?.last_name].filter(Boolean).join(" ") ||
-    user?.username ||
-    "Usuário";
-
-  return (
-    <div className="min-h-screen bg-[#F5F0EC] flex">
-      {/* Sidebar — desktop */}
-      <aside className="hidden md:flex flex-col w-64 bg-white border-r border-gray-100 fixed inset-y-0 left-0 z-40">
-        <div className="p-6 border-b border-gray-100">
-          <Link href="/home" className="font-heading font-black text-2xl text-primary tracking-tight">
-            CapMar
-          </Link>
-        </div>
-
-        <nav className="flex-1 p-4 flex flex-col gap-1">
-          {navItems.map((item) => (
-            <Link
-              key={item.href}
-              href={item.href}
-              className={`flex items-center gap-3 px-4 py-3 rounded-xl font-medium transition-colors ${
-                pathname === item.href || pathname.startsWith(item.href.split("/")[1] === "projeto" ? "/projeto" : item.href.split("/")[1] === "equipe" ? "/equipe" : item.href)
-                  ? "bg-primary/10 text-primary"
-                  : "text-gray-600 hover:bg-primary/5 hover:text-primary"
-              }`}
-            >
-              {item.icon}
-              {item.label}
-            </Link>
-          ))}
-        </nav>
-
-        <div className="p-4 border-t border-gray-100 flex items-center gap-2">
-          <Link
-            href="/perfil"
-            className="flex flex-1 min-w-0 items-center gap-3 px-3 py-2 rounded-xl hover:bg-gray-50"
-          >
-            <Avatar user={user} className="w-9 h-9 text-sm" />
-            <div className="flex-1 min-w-0">
-              <p className="text-sm font-semibold text-gray-800 truncate">{displayName}</p>
-              <p className="text-xs text-gray-400 truncate">
-                {user?.username ? `@${user.username}` : ""}
-              </p>
-            </div>
-          </Link>
-          <button
-            onClick={handleLogout}
-            title="Sair"
-            className="p-2 text-gray-400 hover:text-accent hover:bg-accent/5 rounded-xl transition-colors shrink-0"
-          >
-            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" /></svg>
-          </button>
-        </div>
-      </aside>
-
-      {/* Main */}
-      <div className="flex-1 min-w-0 md:ml-64 flex flex-col min-h-screen">
-        <header className="sticky top-0 z-30 bg-white/80 backdrop-blur border-b border-gray-100 min-h-14 flex flex-wrap items-center px-4 py-2 md:px-6 gap-3">
-          <form action="/home" method="get" role="search" className="flex-1 basis-full min-w-0 sm:basis-auto sm:max-w-md">
-            <div className="flex items-center gap-2 bg-gray-100 rounded-xl px-3 py-2">
-              <svg className="w-4 h-4 text-gray-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>
-              <input className="bg-transparent text-sm text-gray-600 placeholder-gray-400 outline-none w-full" name="q" aria-label="Buscar projetos" maxLength={100} placeholder="Buscar projetos..." />
-              <button type="submit" className="text-sm font-semibold text-primary">Buscar</button>
-            </div>
-          </form>
-          <button onClick={handleLogout} className="rounded-lg px-2 py-2 text-sm text-primary md:hidden">Sair</button>
-          <Link href="/chat" className="text-xs font-semibold text-primary">Chat</Link>
-          <Link href="/seguranca" className="text-xs font-semibold text-primary">Segurança</Link>
-          {user?.role === "admin" && <Link href="/admin" className="text-xs font-semibold text-primary">Admin</Link>}
-        </header>
-
-        <main className="flex-1 min-w-0 p-4 pb-24 md:p-6">{children}</main>
-      </div>
-
-      {/* Bottom nav — mobile */}
-      <nav className="md:hidden fixed bottom-0 inset-x-0 z-40 bg-white border-t border-gray-100 flex pb-[env(safe-area-inset-bottom)]">
-        {navItems.map((item) => (
-          <Link
-            key={item.href}
-            href={item.href}
-            className={`flex-1 flex flex-col items-center justify-center py-2 gap-0.5 transition-colors ${
-              pathname === item.href ? "text-primary" : "text-gray-500 hover:text-primary"
-            }`}
-          >
-            {item.icon}
-            <span className="text-[10px] font-medium">{item.label}</span>
-          </Link>
-        ))}
+const items=[{href:"/home",label:"Explorar",icon:Compass},{href:"/feed",label:"Publicações",icon:Newspaper},{href:"/projetos",label:"Projetos",icon:FolderKanban},{href:"/equipes",label:"Equipes",icon:Users},{href:"/chat",label:"Mensagens",icon:MessagesSquare}];
+export default function AppShell({children}:{children:React.ReactNode}){
+  const path=usePathname(),router=useRouter();
+  const [user,setUser]=useState<User|null>(getStoredUser);
+  const [error,setError]=useState("");
+  const menu=useRef<HTMLDialogElement>(null);
+  useEffect(()=>{const update=()=>setUser(getStoredUser());window.addEventListener("capmar-user-changed",update);window.addEventListener("storage",update);return()=>{window.removeEventListener("capmar-user-changed",update);window.removeEventListener("storage",update);};},[]);
+  const active=(href:string)=>path===href||(href==="/projetos"&&path.startsWith("/projeto/"))||(href==="/equipes"&&path.startsWith("/equipe/"));
+  const title=items.find(i=>active(i.href))?.label??(path==="/seguranca"?"Segurança":path==="/admin"?"Administração":"Minha conta");
+  const name=[user?.first_name,user?.last_name].filter(Boolean).join(" ")||user?.username||"Minha conta";
+  async function logout(){try{await clearSession();menu.current?.close();router.replace("/login");}catch{setError("Não foi possível sair. Confira sua conexão e tente novamente.");}}
+  const linkClass=(href:string)=>"workspace-link "+(active(href)?"is-active":"");
+  return <div className="workspace">
+    <a href="#main-content" className="skip-link">Ir para o conteúdo</a>
+    <aside className="workspace-sidebar">
+      <Link href="/home" className="workspace-brand">CapMar<span>Projetos de Maricá</span></Link>
+      <p className="workspace-nav-label">Comunidade</p>
+      <nav aria-label="Menu principal" className="space-y-1">{items.map(({href,label,icon:Icon})=><Link key={href} href={href} aria-current={active(href)?"page":undefined} className={linkClass(href)}><Icon size={20}/>{label}</Link>)}</nav>
+      <nav aria-label="Sua conta" className="workspace-account space-y-1">
+        <Link href="/perfil" className={linkClass("/perfil")}><UserRound size={19}/>Meu perfil</Link>
+        <Link href="/seguranca" className={linkClass("/seguranca")}><ShieldCheck size={19}/>Segurança</Link>
+        {user?.role==="admin"&&<Link href="/admin" className={linkClass("/admin")}><FolderKanban size={19}/>Administração</Link>}
+        <Link href="/ajuda" className="workspace-link"><HelpCircle size={19}/>Ajuda</Link>
       </nav>
+      <div className="workspace-identity"><Link href="/perfil" className="flex min-w-0 flex-1 items-center gap-3"><Avatar user={user} className="h-10 w-10 shrink-0"/><span className="min-w-0"><strong className="block truncate text-sm" title={name}>{name}</strong><span className="block truncate text-xs text-gray-500">@{user?.username}</span></span></Link><button onClick={logout} aria-label="Sair" title="Sair" className="ui-icon-button"><LogOut size={18}/></button></div>
+    </aside>
+    <div className="workspace-body">
+      <header className="workspace-header"><div className="flex min-w-0 items-center gap-3"><Link href="/home" className="font-heading text-xl font-black text-primary md:hidden">CapMar</Link><span className="hidden text-sm text-gray-500 md:inline">Comunidade <span className="px-2 text-gray-300">/</span><span className="font-semibold text-primary">{title}</span></span></div>
+        {!path.startsWith("/projetos")&&path!=="/home"&&<form action="/home" role="search" className="workspace-search"><Search size={17} aria-hidden="true"/><input name="q" aria-label="Buscar projetos" placeholder="Buscar projetos" maxLength={100}/><button type="submit">Buscar</button></form>}
+        <Link href="/perfil" aria-label="Meu perfil" className="shrink-0 md:hidden"><Avatar user={user} className="h-9 w-9"/></Link>
+      </header>
+      {error&&<p role="alert" className="m-4 rounded-xl bg-red-50 p-4 text-red-700">{error}</p>}
+      <main id="main-content" className="workspace-main">{children}</main>
     </div>
-  );
+    <nav aria-label="Menu principal móvel" className="workspace-mobile">{items.filter(i=>i.href!=="/equipes").map(({href,label,icon:Icon})=><Link key={href} href={href} aria-current={active(href)?"page":undefined} className={active(href)?"is-active":""}><Icon size={21}/><span>{label}</span></Link>)}<button aria-haspopup="dialog" onClick={()=>menu.current?.showModal()}><MoreHorizontal size={21}/><span>Mais</span></button></nav>
+    <dialog ref={menu} aria-labelledby="account-menu-title" className="workspace-mobile-dialog"><div className="flex items-center justify-between"><h2 id="account-menu-title" className="font-heading text-xl font-bold text-primary">Sua comunidade</h2><button aria-label="Fechar menu" onClick={()=>menu.current?.close()} className="ui-icon-button"><X size={20}/></button></div><nav aria-label="Mais opções" className="mt-4 grid gap-1">{[{href:"/equipes",label:"Equipes",icon:Users},{href:"/perfil",label:"Meu perfil",icon:UserRound},{href:"/seguranca",label:"Segurança",icon:ShieldCheck},...(user?.role==="admin"?[{href:"/admin",label:"Administração",icon:FolderKanban}]:[]),{href:"/ajuda",label:"Ajuda",icon:HelpCircle}].map(({href,label,icon:Icon})=><Link key={href} href={href} onClick={()=>menu.current?.close()} className="workspace-link"><Icon size={20}/>{label}</Link>)}<button onClick={logout} className="workspace-link"><LogOut size={20}/>Sair</button></nav></dialog>
+  </div>;
 }

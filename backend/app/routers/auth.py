@@ -1,4 +1,5 @@
 import bcrypt
+from sqlalchemy import select
 from fastapi import APIRouter, Depends, HTTPException, Request, Response, status
 from sqlalchemy.orm import Session
 
@@ -46,7 +47,9 @@ def login(payload: schemas.LoginRequest, request: Request, response: Response,
           db: Session = Depends(get_db, scope="function")):
     consume("login-ip:" + client_ip(request), settings.login_limit * 3, 900)
     consume("login-account:" + str(payload.email).lower(), settings.login_limit, 900)
-    user = crud.get_user_by_email(db, payload.email)
+    # Serializa a validação da senha com recuperação/troca e revogação de sessões.
+    user = db.scalar(select(models.User).where(models.User.email == str(payload.email))
+                     .with_for_update().execution_options(populate_existing=True))
     valid = verify_password(payload.password, user.user_password if user else DUMMY_HASH)
     if user is None or not valid or not user.is_active:
         raise HTTPException(401, "E-mail ou senha inválidos")

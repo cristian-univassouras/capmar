@@ -9,6 +9,7 @@ from . import models
 from .config import settings
 from .database import SessionLocal
 from .media import bind_media, store_upload
+from .presentation import project_media
 
 
 def cleanup():
@@ -16,6 +17,7 @@ def cleanup():
     removed = 0
     with SessionLocal.begin() as db:
         db.execute(delete(models.AuthSession).where(models.AuthSession.expires_at <= now))
+        db.execute(delete(models.PasswordReset).where(models.PasswordReset.expires_at <= now))
         db.execute(delete(models.RateBucket).where(models.RateBucket.window < now - 7200))
         # Mesma ordem de locks do upload: usuário -> mídia.
         owners = list(db.scalars(select(models.Upload.owner_id).distinct()))
@@ -32,6 +34,8 @@ def cleanup():
                 referenced = resource is not None and any(
                     getattr(resource, field) == "/uploads/" + upload.upload_id
                     for field in fields[upload.resource_type])
+                if resource is not None and upload.resource_type == "project":
+                    referenced = "/uploads/" + upload.upload_id in project_media(resource)
                 if not referenced:
                     db.delete(upload)
                     removed += 1
@@ -72,7 +76,7 @@ def import_legacy():
                             data = source.read(5 * 1024 * 1024 + 1)
                         upload = store_upload(db, owner, data)
                         setattr(resource, field, "/uploads/" + upload.upload_id)
-                    bind_media(db, owner, kind, rid, [getattr(resource, field) for field in fields])
+                    bind_media(db, owner, kind, rid, project_media(resource) if kind == "project" else [getattr(resource, field) for field in fields])
                 imported += 1
             except Exception:
                 # Não imprimir conteúdo, caminhos privados ou credenciais.

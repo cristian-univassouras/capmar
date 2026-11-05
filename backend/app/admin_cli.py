@@ -44,6 +44,7 @@ def main():
         user.mfa_pending, user.mfa_pending_until, user.mfa_last_step = None, 0, -1
         db.flush()
         db.execute(delete(models.AuthSession).where(models.AuthSession.user_id == user.user_id))
+        db.execute(delete(models.PasswordReset).where(models.PasswordReset.user_id == user.user_id))
         record(db, None, "operator." + args.action, "user", user.user_id, reason, operator=getpass.getuser())
     print("Operação concluída. Sessões anteriores revogadas.")
 

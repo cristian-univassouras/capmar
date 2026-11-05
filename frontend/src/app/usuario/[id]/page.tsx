@@ -6,8 +6,9 @@ import { ApiError, getUser, getOptionalMe, type Author, type User } from "@/lib/
 import { createDirectConversation } from "@/lib/engagement";
 import { displayNameOf } from "@/lib/format";
 import { Avatar } from "@/app/_components/media";
-import PublicHeader from "@/app/_components/PublicHeader";
+import PublicFrame from "@/app/_components/PublicFrame";
 import ProjectBrowser from "@/app/_components/ProjectBrowser";
+import { useSessionRevision } from "@/lib/use-session-revision";
 
 export default function PublicProfile() {
   const { id } = useParams<{ id: string }>();
@@ -19,7 +20,8 @@ export default function PublicProfile() {
   const [error, setError] = useState("");
   const [attempt, setAttempt] = useState(0);
   const [loaded, setLoaded] = useState("");
-  const key = id + ":" + attempt;
+  const sessionRevision = useSessionRevision();
+  const key = id + ":" + attempt + ":" + sessionRevision;
   useEffect(() => {
     let active = true;
     getOptionalMe().then((value) => { if (active) setMe(value); }).catch(() => {});
@@ -38,7 +40,7 @@ export default function PublicProfile() {
       else setChatError(err instanceof Error ? err.message : "Não foi possível iniciar a conversa.");
     } finally { setSending(false); }
   }
-  return <div className="min-h-screen bg-background"><PublicHeader /><main className="mx-auto max-w-6xl space-y-6 px-4 py-8">
+  return <PublicFrame>
     <Link href="/home" className="text-primary">← Explorar projetos</Link>
     {loaded !== key ? <p role="status">Carregando perfil...</p> : user ? <>
       <section className="flex flex-wrap items-center gap-4 rounded-2xl bg-white p-6"><Avatar user={user} className="h-20 w-20 text-2xl" /><div className="min-w-0"><h1 className="break-words font-heading text-3xl font-bold">{displayNameOf(user)}</h1><p>@{user.username}</p></div>{me?.user_id !== user.user_id && <button disabled={sending} onClick={startChat} className="rounded-xl bg-primary px-5 py-3 text-white disabled:opacity-50">{sending ? "Abrindo conversa..." : "Enviar mensagem"}</button>}</section>
@@ -46,5 +48,5 @@ export default function PublicProfile() {
       <h2 className="text-2xl font-bold">Projetos públicos</h2>
       <Suspense fallback={<p role="status">Carregando projetos...</p>}><ProjectBrowser publicOnly ownerId={user.user_id} /></Suspense>
     </> : <div role="alert"><p>{error}</p><button className="mt-3 underline" onClick={() => setAttempt((n) => n + 1)}>Tentar novamente</button></div>}
-  </main></div>;
+  </PublicFrame>;
 }

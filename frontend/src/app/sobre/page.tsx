@@ -1,20 +1,20 @@
-import Navbar from "@/app/_landing/layout/Navbar";
-import Footer from "@/app/_landing/layout/Footer";
+import PublicFrame from "@/app/_components/PublicFrame";
+
 
 export default function SobrePage() {
   return (
-    <main className="min-h-screen w-full bg-background">
-      <Navbar />
+    <PublicFrame className="max-w-4xl">
 
-      <div className="max-w-3xl mx-auto px-4 pt-40 pb-24 flex flex-col gap-20">
+
+      <div className="max-w-3xl mx-auto px-4 pt-4 pb-8 flex flex-col gap-12">
 
         {/* Hero */}
         <div>
           <p className="text-accent font-semibold text-sm uppercase tracking-widest mb-4">Sobre o CapMar</p>
-          <h1 className="font-heading font-black text-5xl md:text-7xl uppercase tracking-tighter text-primary leading-none mb-8">
+          <h1 className="font-heading font-black text-4xl md:text-5xl uppercase tracking-tighter text-primary leading-none mb-8">
             Feito em<br />Maricá,<br />para Maricá.
           </h1>
-          <p className="text-gray-600 text-xl leading-relaxed">
+          <p className="text-gray-600 text-lg leading-relaxed">
             Maricá tem gente criativa demais, com projetos bons demais, que ficam no papel por falta de visibilidade.
             O CapMar nasceu da vontade de mudar isso.
           </p>
@@ -25,12 +25,12 @@ export default function SobrePage() {
           <h2 className="font-heading font-black text-3xl text-primary uppercase tracking-tighter">
             Como surgiu
           </h2>
-          <p className="text-gray-600 text-lg leading-relaxed">
+          <p className="text-gray-600 text-base leading-relaxed">
             Somos estudantes de Engenharia de Software da Universidade de Vassouras — Campus Maricá.
             Durante o curso, ficou claro pra gente que a cidade tem um potencial enorme, mas falta um
             espaço digital onde empreendedores locais possam mostrar o que estão construindo.
           </p>
-          <p className="text-gray-600 text-lg leading-relaxed">
+          <p className="text-gray-600 text-base leading-relaxed">
             Não queríamos fazer mais um projeto acadêmico que some na gaveta. Queríamos construir algo
             que as pessoas de verdade pudessem usar — um lugar onde quem tem uma ideia encontra quem
             quer investir nela, e vice-versa.
@@ -38,17 +38,17 @@ export default function SobrePage() {
         </div>
 
         {/* O que é */}
-        <div className="bg-primary rounded-[40px] p-10 md:p-14 text-white flex flex-col gap-6">
+        <div className="bg-primary rounded-2xl p-7 md:p-9 text-white flex flex-col gap-6">
           <h2 className="font-heading font-black text-3xl uppercase tracking-tighter">
             O que é o CapMar
           </h2>
-          <p className="text-white/80 text-lg leading-relaxed">
+          <p className="text-white/80 text-base leading-relaxed">
             Uma rede social focada em projetos. Aqui, projetistas e microempreendedores de Maricá
             criam seu perfil, publicam o que estão fazendo e constroem uma audiência real — sem
             precisar brigar por atenção em redes generalistas.
           </p>
-          <p className="text-white/80 text-lg leading-relaxed">
-            Do lado de quem investe, a plataforma oferece uma vitrine curada de projetos locais,
+          <p className="text-white/80 text-base leading-relaxed">
+            Do lado de quem investe, a plataforma oferece uma vitrine de projetos locais,
             com contexto suficiente pra tomar uma boa decisão de apoio.
           </p>
         </div>
@@ -58,7 +58,7 @@ export default function SobrePage() {
           <h2 className="font-heading font-black text-3xl text-primary uppercase tracking-tighter">
             Por que Maricá?
           </h2>
-          <p className="text-gray-600 text-lg leading-relaxed">
+          <p className="text-gray-600 text-base leading-relaxed">
             Porque é a cidade onde estudamos, onde vivemos e onde vemos todo dia pessoas com
             capacidade técnica e criativa que não têm para onde ir com suas ideias. Maricá está
             crescendo rápido — a gente quer que esse crescimento chegue em todo mundo, não só
@@ -100,7 +100,7 @@ export default function SobrePage() {
 
       </div>
 
-      <Footer />
-    </main>
+
+    </PublicFrame>
   );
 }

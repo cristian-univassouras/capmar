@@ -7,9 +7,12 @@ import { useState } from "react";
 import AuthShell from "@/app/_auth/AuthShell";
 import { Field, SubmitButton } from "@/app/_auth/ui";
 import { login, saveSession } from "@/lib/api";
+import AuthSwitchLink from "@/app/_auth/AuthSwitchLink";
+import { currentAuthDestination } from "@/lib/auth-navigation";
 
 export default function LoginPage() {
   const router = useRouter();
+  const [useCode,setUseCode]=useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -26,11 +29,12 @@ export default function LoginPage() {
         otp: String(form.get("otp") || "") || undefined,
       });
       saveSession(auth);
-      const next = new URLSearchParams(window.location.search).get("next");
-      const safeNext = next && /^\/(usuario\/\d+|projeto\/\d+|projetos|feed|perfil|admin|chat|seguranca|equipes|equipe\/\d+)$/.test(next) ? next : "/feed";
+      const safeNext = currentAuthDestination() ?? "/feed";
       router.push(safeNext);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Erro ao entrar.");
+      const message=err instanceof Error?err.message:"Erro ao entrar.";
+      setError(message);
+      if(/código|autenticador/i.test(message))setUseCode(true);
       setLoading(false);
     }
   }
@@ -43,9 +47,9 @@ export default function LoginPage() {
       footer={
         <>
           Ainda não tem conta?{" "}
-          <Link href="/register" className="font-semibold text-primary hover:underline">
+          <AuthSwitchLink href="/register">
             Criar conta
-          </Link>
+          </AuthSwitchLink>
         </>
       }
     >
@@ -69,10 +73,11 @@ export default function LoginPage() {
           required
         />
 
-        <Field id="otp" name="otp" label="Código do autenticador (se ativado)" inputMode="numeric" pattern="[0-9]{6}" maxLength={6} autoComplete="one-time-code" />
+        <label className="flex items-center gap-2 text-xs text-gray-500"><input type="checkbox" checked={useCode} onChange={e=>setUseCode(e.target.checked)} className="accent-primary"/>Uso um aplicativo autenticador</label>{useCode&&<Field id="otp" name="otp" label="Código do autenticador (se ativado)" inputMode="numeric" pattern="[0-9]{6}" maxLength={6} autoComplete="one-time-code"/>}
+        <Link href="/esqueci-senha" className="text-sm font-semibold text-primary hover:underline">Esqueci minha senha</Link>
 
         {error && (
-          <p className="rounded-2xl bg-accent/10 px-4 py-3 text-sm font-medium text-accent">
+          <p role="alert" className="rounded-2xl bg-accent/10 px-4 py-3 text-sm font-medium text-accent">
             {error}
           </p>
         )}

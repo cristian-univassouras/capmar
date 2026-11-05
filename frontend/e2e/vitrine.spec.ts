@@ -16,7 +16,7 @@ test("visitante navega, busca e lê projeto e perfil sem login", async ({ page }
   page.on("pageerror", (error) => errors.push(error.message));
   await page.goto("/");
   await noOverflow(page);
-  await expect(page.getByRole("link", { name: "COMECE JÁ" }).first()).toHaveAttribute("href", "/register");
+  await expect(page.getByRole("link", { name: "Criar conta", exact: true }).first()).toHaveAttribute("href", "/register");
   expect(await page.locator('a[href="#"],a[href="/start"]').count()).toBe(0);
   if (info.project.name.startsWith("mobile")) {
     const toggle = page.getByRole("button", { name: "Abrir menu" });
@@ -97,7 +97,7 @@ test("cadastro com imagens e tags, edição, erro de comentário e exclusão", a
     await guest.close();
     await page.route("**/projects/" + id + "/comments", (route) => route.fulfill({
       status: 503, contentType: "application/json", body: JSON.stringify({ detail: "Falha controlada no comentário" }),
-      headers: { "Access-Control-Allow-Origin": "http://localhost:3000", "Access-Control-Allow-Credentials": "true" },
+      headers: { "Access-Control-Allow-Origin": process.env.E2E_BASE_URL ?? "http://localhost:3000", "Access-Control-Allow-Credentials": "true" },
     }));
     await page.getByLabel("Seu comentário").fill("Comentário de teste");
     await page.getByRole("button", { name: "Enviar comentário" }).click();

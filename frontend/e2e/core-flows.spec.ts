@@ -1,0 +1,68 @@
+import { test, expect } from "@playwright/test";
+const api = process.env.E2E_API_URL ?? "http://localhost:8000";
+const base = process.env.E2E_BASE_URL ?? "http://localhost:3000";
+if (![api, base].every((u) => ["localhost", "127.0.0.1"].includes(new URL(u).hostname))) throw new Error("Somente ambiente local");
+const headers = { Origin: base, "X-CSRF-Protection": "1" };
+
+test("perfil, publicação, gestão de equipe, segurança e saída funcionam pela interface", async ({ page }, info) => {
+  expect((await page.request.post(api + "/auth/login", { headers, data: { email: "e2e_alice@example.com", password: "Capmar-E2E@123" } })).status()).toBe(200);
+  const me = await (await page.request.get(api + "/auth/me")).json();
+  const created = await page.request.post(api + "/projects", { headers, data: { name: "Fluxos Chrome " + Date.now() } });
+  expect(created.status()).toBe(201);
+  const project = await created.json();
+  const teamName = "Equipe Chrome " + Date.now();
+  try {
+    await page.goto("/perfil");
+    await page.getByRole("button", { name: "Editar perfil", exact: true }).click();
+    await page.getByLabel("Nome", { exact: true }).fill("Teste Chrome");
+    await page.getByRole("button", { name: "Salvar", exact: true }).click();
+    await expect(page.getByRole("heading", { level: 1 })).toContainText("Teste Chrome");
+    if (info.project.name === "desktop") await expect(page.getByRole("complementary").getByRole("link", { name: /Teste Chrome/ })).toBeVisible();
+    await page.reload(); await expect(page.getByRole("heading", { level: 1 })).toContainText("Teste Chrome");
+    await page.goto("/feed");
+    const content = "Publicação Chrome " + info.project.name + " " + Date.now();
+    await page.getByLabel("Texto da publicação").fill(content);
+    await page.getByLabel("Projeto da publicação").selectOption(String(project.project_id));
+    await page.getByRole("button", { name: "Publicar", exact: true }).click();
+    const post = page.locator("div.bg-white").filter({ has: page.getByText(content, { exact: true }) }).last();
+    await expect(page.getByText(content, { exact: true })).toBeVisible();
+    await post.getByRole("button", { name: /Excluir/ }).click();
+    await expect(page.getByText(content, { exact: true })).toHaveCount(0);
+    await page.goto("/equipes"); await page.getByRole("button", { name: "+ Nova equipe", exact: true }).click();
+    await page.getByLabel("Nome da equipe", { exact: true }).fill(teamName);
+    await page.getByLabel("Propósito", { exact: true }).fill("Validação de equipe pela interface.");
+    await page.getByLabel("Projeto", { exact: true }).selectOption(String(project.project_id));
+    await page.getByRole("button", { name: "Criar equipe", exact: true }).click();
+    await page.getByRole("link").filter({ hasText: teamName }).click();
+    await expect(page.getByRole("heading", { level: 1, name: teamName })).toBeVisible();
+    const bob = (await (await page.request.get(api + "/users?q=e2e_bob")).json())[0];
+    await page.getByLabel("Usuário para adicionar à equipe").selectOption(String(bob.user_id));
+    await page.getByRole("button", { name: "Adicionar", exact: true }).click();
+    await expect(page.getByRole("button", { name: "Remover", exact: true })).toHaveCount(1);
+    await page.getByRole("button", { name: "Editar", exact: true }).click();
+    await page.getByLabel("Nome da equipe", { exact: true }).fill(teamName + " revisada");
+    await page.getByRole("button", { name: "Salvar", exact: true }).click();
+    await expect(page.getByRole("heading", { level: 1 })).toHaveText(teamName + " revisada");
+    await page.getByRole("link", { name: "Chat da equipe", exact: true }).click();
+    await expect(page.getByRole("region", { name: "Conversa", exact: true }).getByRole("heading")).toHaveText(teamName + " revisada");
+    const team = (await (await page.request.get(api + "/teams?project_id=" + project.project_id)).json())[0];
+    await page.goto("/equipe/" + team.team_id);
+    await page.getByRole("button", { name: "Remover", exact: true }).click();
+    await expect(page.getByRole("button", { name: "Remover", exact: true })).toHaveCount(0);
+    expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1)).toBe(true);
+    page.once("dialog", (dialog) => dialog.accept());
+    await page.getByRole("button", { name: "Excluir", exact: true }).click();
+    await expect(page).toHaveURL(/\/equipes$/);
+    await page.goto("/seguranca");
+    await expect(page.getByRole("heading", { level: 1 })).toBeVisible();
+    await page.screenshot({ path: "../docs/thiago/security-" + info.project.name + ".png", fullPage: true });
+    if (!await page.getByRole("button", { name: "Sair", exact: true }).isVisible()) await page.getByRole("button", { name: "Mais", exact: true }).click();
+  await page.getByRole("button", { name: "Sair", exact: true }).click();
+    await expect(page).toHaveURL(/\/login$/);
+    await page.goto("/feed"); await expect(page).toHaveURL(/\/login/);
+  } finally {
+    await page.request.post(api + "/auth/login", { headers, data: { email: "e2e_alice@example.com", password: "Capmar-E2E@123" } });
+    await page.request.patch(api + "/users/" + me.user_id, { headers, data: { first_name: me.first_name } });
+    await page.request.delete(api + "/projects/" + project.project_id, { headers });
+  }
+});

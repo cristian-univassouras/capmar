@@ -1,7 +1,15 @@
 import type { User } from "./api";
 
 export function formatDate(iso: string): string {
+  // Datas civis do PostgreSQL não representam meia-noite UTC. Formato idêntico
+  // no servidor e navegador evita dia anterior e falhas de hidratação.
+  const civil = /^(\d{4})-(\d{2})-(\d{2})$/.exec(iso);
+  if (civil) {
+    const months = ["jan.", "fev.", "mar.", "abr.", "mai.", "jun.", "jul.", "ago.", "set.", "out.", "nov.", "dez."];
+    return `${civil[3]} de ${months[Number(civil[2]) - 1]} de ${civil[1]}`;
+  }
   return new Date(iso).toLocaleDateString("pt-BR", {
+    timeZone: "America/Sao_Paulo",
     day: "2-digit",
     month: "short",
     year: "numeric",
