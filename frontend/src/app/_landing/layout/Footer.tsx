@@ -1,13 +1,11 @@
 import Link from "next/link";
 import { Logo } from "@/app/_components/ui/Logo";
-import { TileStrip } from "@/app/_components/ui/primitives";
 
 const link = "inline-flex min-h-11 items-center text-[15px] text-gray-600 hover:text-primary hover:underline";
 
 export default function Footer() {
   return (
-    <footer className="mt-16">
-      <TileStrip />
+    <footer className="mt-16 border-t border-line">
       <div className="mx-auto grid max-w-6xl gap-8 px-4 py-10 sm:px-6 md:grid-cols-[1.4fr_1fr_1fr]">
         <div>
           <Logo />

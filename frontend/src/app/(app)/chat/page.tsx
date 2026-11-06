@@ -17,13 +17,10 @@ function mergeMessages(old: Message[], incoming: Message[]) {
   return [...new Map([...old, ...incoming].map((m) => [m.message_id, m])).values()].sort((a, b) => a.message_id - b.message_id);
 }
 
-const TILES = ["tile-a", "tile-b", "tile-c", "tile-d", "tile-e"] as const;
-function tileFor(seed: string) { let h = 0; for (let i = 0; i < seed.length; i++) h = (h * 31 + seed.charCodeAt(i)) >>> 0; return TILES[h % TILES.length]; }
-
-/** Conversa de equipe mostra um azulejo da equipe; conversa direta mostra a foto da outra pessoa. */
+/** Conversa de equipe mostra um ícone suave de equipe; conversa direta mostra a foto da outra pessoa. */
 function ConversationAvatar({ conversation, me, className }: { conversation: Conversation; me: User | null; className: string }) {
   if (conversation.kind === "team") {
-    return <span aria-hidden="true" className={`tile ${tileFor(conversation.title)} flex shrink-0 items-center justify-center rounded-xl ${className}`}><span className="flex h-6 w-6 items-center justify-center rounded-md bg-surface text-secondary"><Users size={15} /></span></span>;
+    return <span aria-hidden="true" className={`flex shrink-0 items-center justify-center rounded-xl bg-teal-soft text-teal ${className}`}><Users size={18} /></span>;
   }
   return <Avatar user={conversation.participants.find((u) => u.user_id !== me?.user_id) ?? null} className={className} />;
 }

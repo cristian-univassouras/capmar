@@ -51,13 +51,13 @@ def _validate_search(q):
 def search_projects(skip: int = Query(0, ge=0, le=10000), limit: int = Query(12, ge=1, le=100),
                     q: str = Query("", max_length=100), category_id: int | None = Query(None, ge=1),
                     public_only: bool = False, owner_id: int | None = Query(None, ge=1),
-                    writable_only: bool = False,
+                    writable_only: bool = False, sort: str = Query("recent", pattern="^(recent|likes)$"),
                     db: Session = Depends(get_db, scope="function"),
                     user: models.User | None = Depends(get_current_user_optional)):
     _validate_search(q)
     filters = dict(user=user, q=q, category_id=category_id, public_only=public_only, owner_id=owner_id, writable_only=writable_only)
     return schemas.ProjectPage(
-        items=[_annotate(p, user, db) for p in crud.list_projects(db, skip=skip, limit=limit, **filters)],
+        items=[_annotate(p, user, db) for p in crud.list_projects(db, skip=skip, limit=limit, sort=sort, **filters)],
         total=crud.count_projects(db, **filters), skip=skip, limit=limit)
 
 

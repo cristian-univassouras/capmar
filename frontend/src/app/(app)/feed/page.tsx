@@ -20,6 +20,7 @@ import { displayNameOf, formatDate } from "@/lib/format";
 import { Avatar, ImagePicker } from "@/app/_components/media";
 import { useConfirm, useToast } from "@/app/_components/ui/feedback";
 import { EmptyState, ListSkeleton } from "@/app/_components/ui/primitives";
+import FeedSidebar from "./FeedSidebar";
 
 export default function FeedPage() {
   const toast = useToast();
@@ -105,7 +106,8 @@ export default function FeedPage() {
   }
 
   return (
-    <div className="mx-auto max-w-3xl space-y-6">
+    <div className="mx-auto grid max-w-6xl items-start gap-6 lg:grid-cols-[minmax(0,1fr)_320px]">
+    <div className="min-w-0 space-y-6">
       <div className="ui-page-heading"><div><h1>Publicações</h1><p>Novidades, ideias e próximos passos dos projetos da comunidade.</p></div></div>
       {/* Criar publicação: compacto até receber foco */}
       <form
@@ -236,6 +238,8 @@ export default function FeedPage() {
           ))}
         </div>
       )}
+    </div>
+    <FeedSidebar me={me} posts={posts.length} />
     </div>
   );
 }

@@ -268,7 +268,7 @@ async function responseError(response: Response, fallback: string) {
 }
 
 export type ProjectPage = { items: Project[]; total: number; skip: number; limit: number };
-export type ProjectSearch = { q?: string; category_id?: number; skip?: number; limit?: number; public_only?: boolean; owner_id?: number; writable_only?: boolean };
+export type ProjectSearch = { q?: string; category_id?: number; skip?: number; limit?: number; public_only?: boolean; owner_id?: number; writable_only?: boolean; sort?: "recent" | "likes" };
 
 export function searchProjects(filters: ProjectSearch = {}) {
   const query = new URLSearchParams();

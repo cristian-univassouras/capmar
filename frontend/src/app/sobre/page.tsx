@@ -55,7 +55,7 @@ export default function SobrePage() {
           <ul className="grid gap-3 sm:grid-cols-2">
             {team.map((dev, i) => (
               <li key={dev.name} className="ui-panel flex items-center gap-4 px-5 py-4">
-                <span aria-hidden="true" className={"tile " + ["tile-a", "tile-b", "tile-c", "tile-d"][i] + " grid h-11 w-11 shrink-0 place-items-center rounded-[12px]"}>
+                <span aria-hidden="true" className={["bg-primary-soft text-primary", "bg-teal-soft text-teal", "bg-accent-soft text-accent", "bg-sun-soft text-secondary"][i % 4] + " grid h-11 w-11 shrink-0 place-items-center rounded-[12px]"}>
                   <span className="grid h-7 w-7 place-items-center rounded-lg bg-surface font-heading text-sm font-extrabold text-secondary">{dev.name[0]}</span>
                 </span>
                 <div>

@@ -5,12 +5,12 @@ import PublicHeader from "@/app/_components/PublicHeader";
 import Footer from "@/app/_landing/layout/Footer";
 import FeaturedProjects from "@/app/_landing/FeaturedProjects";
 import CommunityCTA from "@/app/_components/CommunityCTA";
-import { Reveal, TileStrip } from "@/app/_components/ui/primitives";
+import { Reveal } from "@/app/_components/ui/primitives";
 
 const steps = [
-  { icon: FolderKanban, tile: "tile-a", title: "Conte a história do projeto", text: "Crie sua conta, escolha um nome e descreva o que você faz ou quer fazer. Capa, imagens e PDFs entram quando você tiver." },
-  { icon: Users, tile: "tile-b", title: "Mostre quem está junto", text: "Monte a equipe, liste parceiros e deixe claro quem responde pelo projeto. Quem apoia quer saber com quem está falando." },
-  { icon: MessagesSquare, tile: "tile-d", title: "Receba contato e apoio", text: "Publique, compartilhe o link ou o QR Code e converse pelas mensagens. Se você aceita apoio, o link de contribuição fica na página do projeto." },
+  { icon: FolderKanban, tile: "bg-primary-soft text-primary", title: "Conte a história do projeto", text: "Crie sua conta, escolha um nome e descreva o que você faz ou quer fazer. Capa, imagens e PDFs entram quando você tiver." },
+  { icon: Users, tile: "bg-teal-soft text-teal", title: "Mostre quem está junto", text: "Monte a equipe, liste parceiros e deixe claro quem responde pelo projeto. Quem apoia quer saber com quem está falando." },
+  { icon: MessagesSquare, tile: "bg-accent-soft text-accent", title: "Receba contato e apoio", text: "Publique, compartilhe o link ou o QR Code e converse pelas mensagens. Se você aceita apoio, o link de contribuição fica na página do projeto." },
 ];
 
 export default function Home() {
@@ -44,8 +44,6 @@ export default function Home() {
           </div>
         </section>
 
-        <TileStrip />
-
         <section aria-labelledby="titulo-projetos" className="mx-auto max-w-6xl px-4 py-16 sm:px-6">
           <Reveal>
             <h2 id="titulo-projetos" className="mb-8 max-w-2xl font-heading text-3xl font-extrabold tracking-tight text-secondary sm:text-4xl">Quem já está na vitrine</h2>
@@ -78,9 +76,7 @@ export default function Home() {
           <ol className="grid gap-0 divide-y divide-line border-y border-line">
             {steps.map(({ icon: Icon, tile, title, text }, i) => (
               <Reveal as="li" index={i} key={title} className="flex gap-5 py-7">
-                <span className={"tile " + tile + " grid h-14 w-14 shrink-0 place-items-center rounded-[14px]"} aria-hidden="true">
-                  <span className="grid h-9 w-9 place-items-center rounded-[10px] bg-surface text-secondary"><Icon size={20} /></span>
-                </span>
+                <span className={"grid h-12 w-12 shrink-0 place-items-center rounded-[14px] " + tile} aria-hidden="true"><Icon size={22} /></span>
                 <div>
                   <h3 className="font-heading text-xl font-bold tracking-tight text-secondary">{title}</h3>
                   <p className="mt-2 max-w-[56ch] text-base text-muted">{text}</p>

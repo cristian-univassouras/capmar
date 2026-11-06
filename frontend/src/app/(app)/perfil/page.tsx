@@ -98,7 +98,7 @@ export default function PerfilPage() {
     <div className="mx-auto max-w-4xl space-y-8">
       {/* Cartão do perfil */}
       <section aria-label="Seu perfil" className="ui-panel overflow-hidden">
-        <div className="tile tile-a h-24" aria-hidden="true" />
+        <div className="h-24 bg-primary-soft" aria-hidden="true" />
         <div className="px-6 pb-7">
           <div className="-mt-12 mb-4 flex items-end justify-between gap-3">
             <Avatar user={user} className="h-24 w-24 border-4 border-surface text-3xl" />

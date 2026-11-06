@@ -66,7 +66,9 @@
   --color-secondary: var(--secondary);
   --color-tertiary: var(--tertiary);
   --color-teal: var(--teal);
+  --color-teal-soft: var(--teal-soft);
   --color-sun: var(--sun);
+  --color-sun-soft: var(--sun-soft);
   --color-danger: var(--danger);
   --color-danger-soft: var(--danger-soft);
   --font-sans: var(--font-body);

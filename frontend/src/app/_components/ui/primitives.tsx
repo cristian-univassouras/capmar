@@ -71,20 +71,22 @@ export function Reveal({ children, index = 0, className = "", as: Tag = "div" }:
   return <Component ref={ref} className={`reveal ${className}`} style={{ ["--i" as string]: index }}>{children}</Component>;
 }
 
-const TILES = ["tile-a", "tile-b", "tile-c", "tile-d", "tile-e"] as const;
+const COVERS = [
+  { bg: "#e3eaf7", fg: "#1b4fa8" },
+  { bg: "#dff0f1", fg: "#0e6a73" },
+  { bg: "#f7e6df", fg: "#a63d22" },
+  { bg: "#f8edd3", fg: "#8a5d0a" },
+  { bg: "#e0efe7", fg: "#1f6b4a" },
+] as const;
 function hash(text: string) { let h = 0; for (let i = 0; i < text.length; i++) h = (h * 31 + text.charCodeAt(i)) >>> 0; return h; }
 
-/** Capa de projeto sem imagem: um azulejo escolhido pela categoria, sempre o mesmo para o mesmo projeto. */
+/** Capa de projeto sem imagem: cor suave da paleta e a inicial do nome. Sempre a mesma para o mesmo projeto. */
 export function TileCover({ seed, label, className = "" }: { seed: string; label?: string; className?: string }) {
-  const tile = TILES[hash(seed || "capmar") % TILES.length];
+  const cover = COVERS[hash(seed || "capmar") % COVERS.length];
+  const initial = (label || seed || "C").trim().charAt(0).toUpperCase();
   return (
-    <div className={`tile ${tile} flex h-full w-full items-center justify-center ${className}`} role="img" aria-label={label ? `Capa de ${label}` : "Capa padrão do projeto"}>
-      <span className="rounded-[10px] bg-surface px-3.5 py-1.5 font-heading text-lg font-extrabold tracking-tight text-secondary">CapMar</span>
+    <div className={`flex h-full w-full items-center justify-center ${className}`} style={{ background: cover.bg, color: cover.fg }} role="img" aria-label={label ? `Capa de ${label}` : "Capa padrão do projeto"}>
+      <span aria-hidden="true" className="font-heading text-6xl font-extrabold leading-none tracking-tight opacity-90">{initial}</span>
     </div>
   );
-}
-
-/** Faixa de azulejo usada como separador entre seções públicas. */
-export function TileStrip({ className = "" }: { className?: string }) {
-  return <div aria-hidden="true" className={`tile-strip ${className}`} />;
 }

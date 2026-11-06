@@ -107,12 +107,15 @@ def count_projects(db, **filters):
 
 
 def list_projects(db: Session, skip: int = 0, limit: int = 100, user=None,
-                  q="", category_id=None, public_only=False, owner_id=None, writable_only=False) -> list[models.Project]:
+                  q="", category_id=None, public_only=False, owner_id=None, writable_only=False,
+                  sort="recent") -> list[models.Project]:
+    order = ([models.Project.likes_count.desc(), models.Project.project_id.desc()]
+             if sort == "likes" else [models.Project.project_id.desc()])
     stmt = (
         select(models.Project)
         .options(*_PROJECT_LOADS)
         .where(*project_filters(user, q, category_id, public_only, owner_id, writable_only))
-        .order_by(models.Project.project_id.desc())
+        .order_by(*order)
         .offset(skip)
         .limit(limit)
     )

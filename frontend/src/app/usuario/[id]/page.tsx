@@ -55,7 +55,7 @@ export default function PublicProfile() {
     <Link href="/home" className="inline-flex min-h-11 items-center text-[15px] font-semibold text-primary hover:underline">← Explorar projetos</Link>
     {loaded !== key ? <div role="status" aria-busy="true" aria-label="Carregando perfil" className="grid gap-6"><div className="ui-panel flex items-center gap-4 p-6"><Skeleton className="h-20 w-20 !rounded-full" /><div className="grid gap-2"><Skeleton className="h-7 w-56" /><Skeleton className="h-4 w-28" /></div></div><ProjectGridSkeleton count={3} /></div> : user ? <>
       <section className="ui-panel overflow-hidden">
-        <div className="tile tile-b h-16" aria-hidden="true" />
+        <div className="h-16 bg-teal-soft" aria-hidden="true" />
         <div className="flex flex-wrap items-end gap-4 px-6 pb-6">
           <Avatar user={user} className="-mt-10 h-20 w-20 border-4 border-surface text-2xl" />
           <div className="min-w-0 flex-1 pt-3"><h1 className="break-words font-heading text-3xl font-extrabold tracking-tight text-secondary">{displayNameOf(user)}</h1><p className="text-[15px] text-muted">@{user.username}</p></div>

@@ -1,6 +1,5 @@
 import Image from "next/image";
 import { Logo } from "@/app/_components/ui/Logo";
-import { TileStrip } from "@/app/_components/ui/primitives";
 
 type AuthShellProps = {
   title: React.ReactNode;
@@ -9,20 +8,28 @@ type AuthShellProps = {
   footer: React.ReactNode;
 };
 
+const points = ["Projetos de gente de Maricá, abertos para qualquer pessoa ver", "Equipe, materiais e contato em um só lugar", "Mensagens diretas com quem quer apoiar"];
+
 /** Casca das telas de acesso. Entrada em CSS (320ms), que o CSS global já zera com movimento reduzido. */
 export default function AuthShell({ title, subtitle, children, footer }: AuthShellProps) {
   return (
     <main className="flex min-h-screen w-full bg-background">
-      <aside className="relative hidden w-[40%] max-w-[560px] flex-col justify-between bg-primary-soft lg:flex">
-        <div className="p-10 pb-0"><Logo /></div>
-        <div className="px-10">
-          <h2 className="font-heading text-5xl font-extrabold leading-[1.02] tracking-[-0.03em] text-secondary">Maricá começa aqui.</h2>
-          <p className="mt-5 max-w-sm text-lg text-gray-600">Mostre seu projeto para a cidade e encontre quem quer apoiar. Feito em Maricá, para Maricá.</p>
+      <aside className="relative hidden w-[44%] max-w-[600px] flex-col gap-10 bg-secondary px-12 py-10 text-white lg:flex">
+        <Logo tone="light" />
+        <div className="flex flex-1 flex-col justify-center gap-8">
+          <div>
+            <h2 className="font-heading text-[44px] font-extrabold leading-[1.04] tracking-[-0.03em]">Maricá começa aqui.</h2>
+            <ul className="mt-6 grid gap-3 text-base text-[#cfe0e6]">
+              {points.map((point) => (
+                <li key={point} className="flex gap-3"><span aria-hidden="true" className="mt-2.5 h-1.5 w-1.5 shrink-0 rounded-full bg-sun" />{point}</li>
+              ))}
+            </ul>
+          </div>
+          <div className="overflow-hidden rounded-[20px] ring-1 ring-white/15">
+            <Image src="/capybara.png" alt="" width={1000} height={558} className="h-auto w-full object-cover" priority />
+          </div>
         </div>
-        <div>
-          <Image src="/capybara.png" alt="" width={1000} height={558} className="h-auto w-full object-cover" priority />
-          <TileStrip />
-        </div>
+        <p className="text-sm text-[#9fb6bf]">Feito em Maricá, para Maricá.</p>
       </aside>
 
       <div className="flex flex-1 items-center justify-center px-4 py-8 sm:px-10">
