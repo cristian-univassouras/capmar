@@ -40,7 +40,8 @@ export default function FeedPage() {
   const [uploading, setUploading] = useState(false);
   const [deleting, setDeleting] = useState<number | null>(null);
   const textarea = useRef<HTMLTextAreaElement>(null);
-  const expanded = focused || posting || posted || content.length > 0 || imageUrl !== null;
+  const form = useRef<HTMLFormElement>(null);
+  const expanded = focused || posting || posted || uploading || content.length > 0 || imageUrl !== null;
 
   useEffect(() => {
     Promise.all([listPosts(), searchProjects({ writable_only: true, limit: 100 })])
@@ -52,6 +53,15 @@ export default function FeedPage() {
       .catch((err) => setError(err instanceof Error ? err.message : "Erro ao carregar."))
       .finally(() => setLoading(false));
   }, []);
+
+  // Recolhe só ao clicar fora ou ao tabular para outro elemento. Abrir o seletor de arquivos tira o foco
+  // da página (relatedTarget nulo) e não pode recolher o formulário, senão a imagem escolhida se perde.
+  useEffect(() => {
+    if (!focused) return;
+    const outside = (event: PointerEvent) => { if (!form.current?.contains(event.target as Node)) setFocused(false); };
+    document.addEventListener("pointerdown", outside);
+    return () => document.removeEventListener("pointerdown", outside);
+  }, [focused]);
 
   async function handlePublish(e: React.FormEvent) {
     e.preventDefault();
@@ -111,9 +121,10 @@ export default function FeedPage() {
       <div className="ui-page-heading"><div><h1>Publicações</h1><p>Novidades, ideias e próximos passos dos projetos da comunidade.</p></div></div>
       {/* Criar publicação: compacto até receber foco */}
       <form
+        ref={form}
         onSubmit={handlePublish}
         onFocus={() => setFocused(true)}
-        onBlur={(e) => { if (!e.currentTarget.contains(e.relatedTarget as Node | null)) setFocused(false); }}
+        onBlur={(e) => { const next = e.relatedTarget as Node | null; if (next && !e.currentTarget.contains(next)) setFocused(false); }}
         className="ui-panel flex gap-3 p-4"
       >
         <ProfileLink user={me}><Avatar user={me} className="h-10 w-10 text-sm" /></ProfileLink>

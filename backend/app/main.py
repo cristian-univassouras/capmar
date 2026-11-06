@@ -10,14 +10,14 @@ from .database import engine
 from .middleware import RequestProtection
 from .limits import consume, client_ip
 from .recovery import router as recovery_router
-from .routers import admin, account_security, chat, auth, categories, posts, projects, teams, uploads, users
+from .routers import admin, account_security, chat, auth, categories, discover, posts, projects, teams, uploads, users
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     # DDL e seeds pertencem ao comando de migração, nunca ao usuário da aplicação.
     with engine.connect() as conn:
-        if conn.scalar(text("SELECT version_num FROM alembic_version")) != "0006_portfolio_recovery":
+        if conn.scalar(text("SELECT version_num FROM alembic_version")) != "0007_discover":
             raise RuntimeError("Banco desatualizado: execute alembic upgrade head com a credencial de migração")
     yield
 
@@ -28,7 +28,9 @@ app.include_router(recovery_router)
 
 @app.middleware("http")
 async def write_limits(request: Request, call_next):
-    if request.method not in ("GET", "HEAD", "OPTIONS") and not request.url.path.startswith("/auth/"):
+    # /discover tem limite próprio por aparelho: a rede do evento compartilha um único IP.
+    if (request.method not in ("GET", "HEAD", "OPTIONS") and not request.url.path.startswith("/auth/")
+            and not request.url.path.startswith("/discover/")):
         from starlette.concurrency import run_in_threadpool
         try:
             await run_in_threadpool(consume, "write-ip:" + client_ip(request), settings.write_limit, 60)
@@ -43,7 +45,7 @@ app.add_middleware(CORSMiddleware, allow_origins=settings.cors_origins_list,
                    allow_methods=["GET", "POST", "PATCH", "DELETE", "OPTIONS"],
                    allow_headers=["Content-Type", "X-CSRF-Protection"])
 
-for router in (admin.router, account_security.router, chat.router, auth.router, categories.router, projects.router, teams.router,
+for router in (admin.router, account_security.router, chat.router, auth.router, categories.router, discover.router, projects.router, teams.router,
                users.router, posts.router, uploads.router):
     app.include_router(router)
 

@@ -6,6 +6,7 @@ import { getMe, getUser, type User, type Post, type Author } from "@/lib/api";
 import { adminUsers, adminPosts, adminAudit, adminUpdateUser, moderatePost, reauthenticate, type Audit } from "@/lib/engagement";
 import { formatDate } from "@/lib/format";
 import ProfileLink from "@/app/_components/ProfileLink";
+import DiscoverPanel from "./DiscoverPanel";
 import { Avatar } from "@/app/_components/media";
 import { EmptyState, ListSkeleton } from "@/app/_components/ui/primitives";
 import { useConfirm, useToast, type ConfirmOptions } from "@/app/_components/ui/feedback";
@@ -26,6 +27,7 @@ function AdminTable({ label, columns, children }: { label: string; columns: stri
 const TABS = [
   { id: "users", slug: "usuarios", label: "Usuários" },
   { id: "posts", slug: "publicacoes", label: "Moderação" },
+  { id: "discover", slug: "descobrir", label: "Descobrir" },
   { id: "audit", slug: "auditoria", label: "Auditoria" },
 ] as const;
 type TabId = (typeof TABS)[number]["id"];
@@ -134,6 +136,7 @@ function AdminContent() {
     let active = true;
     const load = tab === "users" ? adminUsers(query, page * 20).then((r) => { if (active) { setUsers(r.items); setTotal(r.total); } })
       : tab === "posts" ? adminPosts(page * 20).then((r) => { if (active) { setPosts(r.items); setTotal(r.total); } })
+        : tab === "discover" ? Promise.resolve()
         : adminAudit().then((r) => { if (active) setAudit(r); });
     load.then(() => { if (active) setError(""); }).catch((e) => { if (active) setError(e.message); })
       .finally(() => { if (active) setResolved(key); });
@@ -194,6 +197,7 @@ function AdminContent() {
       {tab === "users" && <form onSubmit={(e) => { e.preventDefault(); setQuery(String(new FormData(e.currentTarget).get("q"))); setPage(0); }} className="flex gap-3"><input aria-label="Buscar usuários" name="q" maxLength={100} placeholder="Usuário ou e-mail" className="ui-input" /><button className="ui-button">Buscar</button></form>}
       {tab === "audit" && <label className="flex min-h-11 w-fit cursor-pointer items-center gap-3 text-[15px] text-secondary"><input type="checkbox" checked={showViews} onChange={(e) => setShowViews(e.target.checked)} className="h-5 w-5 accent-[var(--primary)]" />Mostrar também as consultas às listas</label>}
       {loading ? <ListSkeleton rows={5} label="Carregando painel" /> : !error && <>
+        {tab === "discover" && <DiscoverPanel refresh={revision} />}
         {tab === "users" && (users.length ? <AdminTable label="Gestão de usuários" columns={["Usuário", "E-mail", "Papel", "Conta", "Duas etapas", "Ações"]}>
           {users.map((user) => {
             const formId = "manage-user-" + user.user_id;

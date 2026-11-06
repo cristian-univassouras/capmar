@@ -212,6 +212,57 @@ class RateBucket(Base):
     count = Column(Integer, nullable=False)
 
 
+class DiscoverSession(Base):
+    """Pessoa anônima (um aparelho) usando o baralho do evento."""
+    __tablename__ = "discover_sessions"
+    session_id = Column(String(36), primary_key=True)
+    created_at = Column(DateTime(timezone=True), nullable=False, server_default=func.now(), index=True)
+    last_seen_at = Column(DateTime(timezone=True), nullable=False, server_default=func.now())
+    source = Column(String(40), nullable=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.user_id", ondelete="SET NULL"), nullable=True)
+    user_agent = Column(String(300), nullable=True)
+    device_type = Column(String(10), nullable=True)
+    os = Column(String(20), nullable=True)
+    browser = Column(String(20), nullable=True)
+    language = Column(String(16), nullable=True)
+    viewport_w = Column(Integer, nullable=True)
+    viewport_h = Column(Integer, nullable=True)
+    touch = Column(Boolean, nullable=True)
+    referrer = Column(String(200), nullable=True)
+    ip_hash = Column(String(64), nullable=True)
+    visits = Column(Integer, nullable=False, default=0, server_default="0")
+
+
+class DiscoverEvent(Base):
+    """Registro imutável de tudo que acontece no baralho."""
+    __tablename__ = "discover_events"
+    __table_args__ = (UniqueConstraint("session_id", "client_event_id", name="discover_event_client"),)
+    event_id = Column(BigInteger, primary_key=True)
+    session_id = Column(String(36), ForeignKey("discover_sessions.session_id", ondelete="CASCADE"), nullable=False, index=True)
+    client_event_id = Column(String(36), nullable=False)
+    event_type = Column(String(24), nullable=False, index=True)
+    project_id = Column(Integer, ForeignKey("project.project_id", ondelete="SET NULL"), nullable=True, index=True)
+    method = Column(String(12), nullable=True)
+    position = Column(Integer, nullable=True)
+    dwell_ms = Column(Integer, nullable=True)
+    value = Column(Integer, nullable=True)
+    meta = Column(JSON, nullable=True)
+    client_ts = Column(BigInteger, nullable=True)
+    created_at = Column(DateTime(timezone=True), nullable=False, server_default=func.now(), index=True)
+
+
+class DiscoverVote(Base):
+    """Voto atual de cada pessoa em cada projeto (o histórico está nos eventos)."""
+    __tablename__ = "discover_votes"
+    __table_args__ = (CheckConstraint("vote IN ('like','dislike')", name="discover_vote_value"),)
+    session_id = Column(String(36), ForeignKey("discover_sessions.session_id", ondelete="CASCADE"), primary_key=True)
+    project_id = Column(Integer, ForeignKey("project.project_id", ondelete="CASCADE"), primary_key=True, index=True)
+    vote = Column(String(7), nullable=False)
+    created_at = Column(DateTime(timezone=True), nullable=False, server_default=func.now())
+    updated_at = Column(DateTime(timezone=True), nullable=False, server_default=func.now())
+    changes = Column(Integer, nullable=False, default=0, server_default="0")
+
+
 class PasswordReset(Base):
     __tablename__ = "password_resets"
     token_hash = Column(String(64), primary_key=True)

@@ -9,6 +9,7 @@ import { Logo } from "@/app/_components/ui/Logo";
 
 const links = [
   { href: "/home", label: "Explorar projetos" },
+  { href: "/descobrir", label: "Descobrir" },
   { href: "/#como-funciona", label: "Como funciona" },
   { href: "/sobre", label: "Sobre" },
   { href: "/ajuda", label: "Ajuda" },

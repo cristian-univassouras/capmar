@@ -1,8 +1,10 @@
 import time
-from fastapi import APIRouter, Depends, HTTPException, Query, Request
+from datetime import datetime
+from typing import Literal
+from fastapi import APIRouter, Depends, HTTPException, Query, Request, Response
 from sqlalchemy import select, delete, func, text, or_
 from sqlalchemy.orm import Session, selectinload
-from .. import models, schemas
+from .. import discover_metrics, models, schemas
 from ..audit import record
 from ..database import get_db
 from ..deps import get_current_user, session_from_request
@@ -82,6 +84,23 @@ def moderate(post_id: int, payload: ModeratePost, request: Request,
     record(db, admin.user_id, "admin.post.moderate", "post", post_id, payload.reason,
            before={"is_hidden": previous}, after={"is_hidden": payload.is_hidden})
     return {"post_id": post_id, "is_hidden": post.is_hidden}
+
+
+@router.get("/discover/metrics")
+def discover_metrics_view(since: datetime | None = None, until: datetime | None = None,
+                          source: str | None = Query(None, max_length=40),
+                          db: Session = Depends(get_db, scope="function"), admin=Depends(require_admin)):
+    return discover_metrics.compute(db, since, until, source or None)
+
+
+@router.get("/discover/export")
+def discover_export(kind: Literal["events", "votes", "sessions", "projects"], since: datetime | None = None,
+                    until: datetime | None = None, source: str | None = Query(None, max_length=40),
+                    db: Session = Depends(get_db, scope="function"), admin=Depends(require_admin)):
+    body = discover_metrics.export_csv(db, kind, since, until, source or None)
+    record(db, admin.user_id, "admin.discover.export", "discover", None, f"Exportação CSV do baralho: {kind}")
+    return Response(body, media_type="text/csv; charset=utf-8", headers={
+        "Content-Disposition": f'attachment; filename="capmar-descobrir-{kind}.csv"'})
 
 
 @router.get("/audit")

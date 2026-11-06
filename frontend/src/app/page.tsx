@@ -1,6 +1,6 @@
 import Image from "next/image";
 import Link from "next/link";
-import { ArrowUpRight, FolderKanban, MessagesSquare, Users } from "lucide-react";
+import { ArrowUpRight, FolderKanban, Layers, MessagesSquare, Users } from "lucide-react";
 import PublicHeader from "@/app/_components/PublicHeader";
 import Footer from "@/app/_landing/layout/Footer";
 import FeaturedProjects from "@/app/_landing/FeaturedProjects";
@@ -28,6 +28,7 @@ export default function Home() {
             </p>
             <div style={{ ["--i" as string]: 2 }} className="mt-8 flex flex-wrap gap-3">
               <Link href="/home" className="ui-button ui-button-primary !px-6">Explorar projetos<ArrowUpRight size={18} aria-hidden="true" /></Link>
+              <Link href="/descobrir" className="ui-button !px-6"><Layers size={18} aria-hidden="true" />Descobrir</Link>
               <Link href="/projetos" className="ui-button !px-6">Apresentar meu projeto</Link>
             </div>
           </div>

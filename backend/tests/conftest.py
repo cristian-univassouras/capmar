@@ -27,7 +27,7 @@ def migrated():
 @pytest.fixture(autouse=True)
 def clean_db(migrated):
     with database.engine.begin() as conn:
-        conn.execute(text("TRUNCATE audit_logs, conversations, chat_leases, keywords, users, project, team, post, project_comments, project_likes, auth_sessions, media_uploads, rate_buckets RESTART IDENTITY CASCADE"))
+        conn.execute(text("TRUNCATE audit_logs, discover_events, discover_votes, discover_sessions, conversations, chat_leases, keywords, users, project, team, post, project_comments, project_likes, auth_sessions, media_uploads, rate_buckets RESTART IDENTITY CASCADE"))
 
 
 @pytest.fixture

@@ -2,13 +2,14 @@
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { Fragment, useEffect, useRef, useState, useSyncExternalStore } from "react";
-import { Compass, Newspaper, FolderKanban, Users, MessagesSquare, ShieldCheck, UserRound, HelpCircle, LogOut, MoreHorizontal, Search, SlidersHorizontal, X, ChevronRight } from "lucide-react";
+import { Compass, Newspaper, FolderKanban, Users, MessagesSquare, ShieldCheck, UserRound, HelpCircle, LogOut, MoreHorizontal, Layers, Search, SlidersHorizontal, X, ChevronRight } from "lucide-react";
 import { clearSession, getStoredUser, type User } from "@/lib/api";
 import { Avatar } from "@/app/_components/media";
 import { Logo, LogoMark } from "@/app/_components/ui/Logo";
 
 const items = [
   { href: "/home", label: "Explorar", icon: Compass },
+  { href: "/descobrir", label: "Descobrir", icon: Layers },
   { href: "/feed", label: "Publicações", icon: Newspaper },
   { href: "/projetos", label: "Projetos", icon: FolderKanban },
   { href: "/equipes", label: "Equipes", icon: Users },
@@ -65,6 +66,7 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
   }
   const linkClass = (href: string) => "workspace-link " + (active(href) ? "is-active" : "");
   const moreItems = [
+    { href: "/descobrir", label: "Descobrir", icon: Layers },
     { href: "/equipes", label: "Equipes", icon: Users },
     { href: "/perfil", label: "Meu perfil", icon: UserRound },
     { href: "/seguranca", label: "Segurança", icon: ShieldCheck },
@@ -117,7 +119,7 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
       <main id="main-content" className="workspace-main"><div key={path} className="page-enter">{children}</div></main>
     </div>
     <nav aria-label="Menu principal móvel" className="workspace-mobile">
-      {items.filter((i) => i.href !== "/equipes").map(({ href, label, icon: Icon }) => <Link key={href} href={href} aria-current={active(href) ? "page" : undefined} className={active(href) ? "is-active" : ""}><Icon size={21} aria-hidden="true" /><span>{label}</span></Link>)}
+      {items.filter((i) => i.href !== "/equipes" && i.href !== "/descobrir").map(({ href, label, icon: Icon }) => <Link key={href} href={href} aria-current={active(href) ? "page" : undefined} className={active(href) ? "is-active" : ""}><Icon size={21} aria-hidden="true" /><span>{label}</span></Link>)}
       <button aria-haspopup="dialog" onClick={() => menu.current?.showModal()} className={moreActive ? "is-active" : ""}><MoreHorizontal size={21} aria-hidden="true" /><span>Mais</span></button>
     </nav>
     <dialog

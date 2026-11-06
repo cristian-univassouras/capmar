@@ -22,3 +22,13 @@ pgdata/
 # Arquivos locais de demonstração e documentação pessoal
 /backend/app/seed_demo.py
 /docs/thiago/
+
+# Ferramentas e arquivos só do computador de quem desenvolve
+.claude/
+.impeccable/
+skills-lock.json
+atualizar-docker.bat
+documento.md
+
+# Documentação, diagramas e relatórios de scan: ficam locais, fora do GitHub
+/docs/
